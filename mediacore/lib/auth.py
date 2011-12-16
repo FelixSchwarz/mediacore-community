@@ -19,47 +19,23 @@ Auth-related helpers
 Provides a custom request classifier for repoze.who to allow for Flash uploads.
 """
 
-from repoze.what.plugins.quickstart import setup_sql_auth
 from repoze.who.classifiers import default_request_classifier
 from webob.request import Request
 
-from mediacore.config.routing import login_form_url, login_handler_url, logout_handler_url, post_login_url, post_logout_url
 from mediacore.model.meta import DBSession
-from mediacore.model import Group, Permission, User
+from mediacore.model import Group, Permission
+
 
 __all__ = ['add_auth', 'classifier_for_flash_uploads']
 
+
 def add_auth(app, config):
     """Add authentication and authorization middleware to the ``app``."""
-    return setup_sql_auth(
-        app, User, Group, Permission, DBSession,
-
-        login_url = login_form_url,
-        # XXX: These two URLs are intercepted by the sql_auth middleware
-        login_handler = login_handler_url,
-        logout_handler = logout_handler_url,
-
-        # You may optionally define a page where you want users to be
-        # redirected to on login:
-        post_login_url = post_login_url,
-
-        # You may optionally define a page where you want users to be
-        # redirected to on logout:
-        post_logout_url = post_logout_url,
-
-        # Hook into the auth process to read the session ID out of the POST
-        # vars during flash upload requests.
-        classifier = classifier_for_flash_uploads,
-
-        # override this if you would like to provide a different who plugin for
-        # managing login and logout of your application
-        form_plugin = None,
-
-        # The salt used to encrypt auth cookie data. This value must be unique
-        # to each deployment so it comes from the INI config file and is
-        # randomly generated when you run paster make-config
-        cookie_secret = config['sa_auth.cookie_secret']
-    )
+    from acoi.mediacore.auth import setup_acoi_auth
+    return setup_acoi_auth(app, Group, Permission, DBSession,
+                cookie_secret=config['sa_auth.cookie_secret'],
+                plone_url=config.get('auth.plone_url', ''),
+            )
 
 
 def classifier_for_flash_uploads(environ):
