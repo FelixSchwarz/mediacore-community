@@ -27,7 +27,11 @@ from mediacore.plugin import events
 import logging
 log = logging.getLogger(__name__)
 
+
 class LoginController(BaseController):
+
+    allow_only = None
+
     @expose('login.html')
     @observable(events.LoginController.login)
     def login(self, came_from=None, **kwargs):
