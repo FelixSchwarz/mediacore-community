@@ -440,3 +440,13 @@ def best_translation(a, b):
         return translated_a
     else:
         return _(b)
+
+
+def get_user(req):
+    user = req.environ['repoze.who.identity']['user']
+    # XXX: e' molto probabile che se un user_id e' uguale
+    # alla mail l'utente e' un socio
+    is_socio = False
+    if user.user_id == user.email_address:
+        is_socio = True
+    return (user.display_name, user.user_id, is_socio)

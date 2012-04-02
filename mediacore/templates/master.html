@@ -55,6 +55,40 @@
 	body_class = attrs.get('class', '').split(' ');
 	advertising_banner_html = settings['advertising_banner_html'];
 ">
+
+	<div id="portal-personaltools">
+	  <ul class="visualInline">
+	  	<li py:with="fullname, userid, is_socio = h.get_user(h.request)">
+	  		<a href="http://www.acoi.it/${is_socio and 'socio_overview' or 'dashboard'	}" id="user-name">
+			<img width="16" height="16" title="User" alt=""
+				src="http://www.acoi.it/user.gif" />
+            <span class="visualCaseSensitive">${fullname}</span></a>
+        </li>
+
+	  	<li class="visualIcon actionicon-user-logout">
+	      <a href="http://www.acoi.it/logout">
+	        <img width="16px" height="16px"
+	        	src="http://www.acoi.it/log-out.jpg" />Esci</a>
+		</li>
+
+	    <li class="visualIcon actionicon-user-chi-siamo">
+	      <a href="http://www.acoi.it/associazione/chi-siamo">
+	        <img width="16px" height="16px"
+	        	src="http://www.acoi.it/chisiamo.jpg" />Chi siamo</a>
+	    </li>
+	    <li class="visualIcon actionicon-user-contatti">
+	      <a href="http://www.acoi.it/contact-info">
+	        <img width="16px" height="16px"
+	        	src="http://www.acoi.it/contatti.jpg" />Contatti</a>
+		</li>
+	    <li class="visualIcon actionicon-user-info">
+	      <a href="http://www.acoi.it/associazione/come-diventare-socio">
+	        <img width="16px" height="16px"
+	        	src="http://www.acoi.it/info.jpg" />Info d'accesso</a>
+		</li>
+	  </ul>
+	</div>
+
 	<div id="nav-box" class="mcore-nav-box">
 		<ul py:if="not c.nav_hide_main" class="mcore-nav">
 			<li class="mcore-nav-left"><a class="${'nav-explore-on' in body_class and 'active' or None} mcore-nav-link" href="${h.url_for(controller='/media', action='explore')}"><span>Explore</span><em /></a></li>
