@@ -312,7 +312,7 @@ class MediaQuery(Query):
         # XXX: If full text searching is not enabled, we use a very
         #      rudimentary fallback.
         if not self._fulltext_enabled():
-            return self.filter(Media.title.like("%%%s%%" % search))
+            return self.filter(Media.title.ilike("%%%s%%" % search))
 
         filter = MatchAgainstClause(search_cols, search, bool)
         query = self.join(MediaFullText).filter(filter)
