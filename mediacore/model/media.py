@@ -312,7 +312,11 @@ class MediaQuery(Query):
         # XXX: If full text searching is not enabled, we use a very
         #      rudimentary fallback.
         if not self._fulltext_enabled():
-            return self.filter(Media.title.ilike("%%%s%%" % search))
+            # acoi: aggiunto filtro anche per autore
+            return self.filter(
+                    sql.or_(Media.title.ilike("%%%s%%" % search),
+                            media.c.author_name.ilike("%%%s%%" % search),
+                ))
 
         filter = MatchAgainstClause(search_cols, search, bool)
         query = self.join(MediaFullText).filter(filter)
@@ -653,6 +657,7 @@ _media_mapper = mapper(
                    This was decision was made to make it easier to integrate with
                    :class:`mediacore.model.auth.User` down the road."""
         ),
+
         'files': relation(
             MediaFile,
             backref='media',
