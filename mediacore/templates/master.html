@@ -58,18 +58,21 @@
 
 	<div id="portal-personaltools">
 	  <ul class="visualInline">
-	  	<li py:with="fullname, userid, is_socio = h.get_user(h.request)">
-	  		<a href="http://www.acoi.it/${is_socio and 'socio_overview' or 'dashboard'	}" id="user-name">
-			<img width="16" height="16" title="User" alt=""
-				src="http://www.acoi.it/user.gif" />
-            <span class="visualCaseSensitive">${fullname}</span></a>
-        </li>
-
-	  	<li class="visualIcon actionicon-user-logout">
-	      <a href="http://www.acoi.it/logout">
-	        <img width="16px" height="16px"
-	        	src="http://www.acoi.it/log-out.jpg" />Esci</a>
-		</li>
+	  	<py:with vars="fullname, userid, is_socio = h.get_user(h.request)">
+	  	  <py:if test="userid">
+		  	<li>
+		  		<a href="http://www.acoi.it/${is_socio and 'socio_overview' or 'dashboard'	}" id="user-name">
+				<img width="16" height="16" title="User" alt=""
+					src="http://www.acoi.it/user.gif" />
+	            <span class="visualCaseSensitive">${fullname}</span></a>
+	        </li>
+		  	<li class="visualIcon actionicon-user-logout">
+		      <a href="http://www.acoi.it/logout">
+		        <img width="16px" height="16px"
+		        	src="http://www.acoi.it/log-out.jpg" />Esci</a>
+			</li>
+          </py:if>
+	    </py:with>
 
 	    <li class="visualIcon actionicon-user-chi-siamo">
 	      <a href="http://www.acoi.it/associazione/chi-siamo">

@@ -443,7 +443,10 @@ def best_translation(a, b):
 
 
 def get_user(req):
-    user = req.environ['repoze.who.identity']['user']
+    identity = req.environ.get('repoze.who.identity')
+    if not identity:
+        return None, None, None
+    user = identity['user']
     # XXX: e' molto probabile che se un user_id e' uguale
     # alla mail l'utente e' un socio
     is_socio = False
