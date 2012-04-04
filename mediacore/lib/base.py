@@ -111,7 +111,8 @@ class BaseController(BareBonesController):
     Adds functionality for fetching and updating an externally generated
     template.
     """
-    allow_only = has_permission('view')
+    # XXX: temporaneamente rimosso per dare l'accesso a tutti
+    # allow_only = has_permission('view')
 
     def __init__(self, *args, **kwargs):
         """Initialize the controller and hook in the external template, if any.
