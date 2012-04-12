@@ -22,6 +22,7 @@ var UploaderBase = new Class({
 		uploadBtn: {'class': 'btn grey'},
 		uploadBtnText: 'Upload a file',
 		postAuthCookie: 'authtkt',
+		otherAuthCookie: '__ac',
 		verbose: false,
 		queued: false,
 		multiple: false,
@@ -39,7 +40,9 @@ var UploaderBase = new Class({
 		if (this.options.postAuthCookie) {
 			this.options.data[this.options.postAuthCookie] = Cookie.read(this.options.postAuthCookie);
 		}
-
+		if (this.options.postAuthCookie) {
+			this.options.data[this.options.otherAuthCookie] = Cookie.read(this.options.otherAuthCookie);
+		}
 		this.target = $(this.options.target);
 		if (this.target.get('type') == 'file') {
 			this.options.fieldName = this.target.get('name');
