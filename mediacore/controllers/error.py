@@ -69,13 +69,14 @@ class ErrorController(BaseController):
 
         message = request.params.get('message', default_message)
         message = clean_xhtml(message)
-
         return dict(
             prefix = environ.get('SCRIPT_NAME', ''),
             code = int(request.params.get('code', getattr(original_response,
                                                           'status_int', 500))),
             message = message,
-            vars = dict(POST_request=unicode(original_request)[:2048]),
+            # XXX: changed from
+            # vars = dict(POST_request=unicode(original_request)[:2048]),
+            vars = dict(POST_request=unicode(message)[:2048]),
         )
 
     @expose(request_method='POST')
