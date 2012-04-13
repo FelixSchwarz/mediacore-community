@@ -117,7 +117,7 @@ msgstr "O:"
 
 #: mediacore/forms/uploader.py:61
 msgid "Submit"
-msgstr "Sottometti:"
+msgstr "Invia"
 
 #: mediacore/forms/admin/__init__.py:27
 msgid "SEARCH..."
