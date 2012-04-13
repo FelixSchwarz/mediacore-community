@@ -194,7 +194,10 @@ class UploadController(BaseController):
 
         # The thumbs may have been created already by add_new_media_file
         if not has_thumbs(media_obj):
-            create_default_thumbs_for(media_obj)
+            try:
+                create_default_thumbs_for(media_obj)
+            except:
+                pass
 
         media_obj.update_status()
         DBSession.flush()
