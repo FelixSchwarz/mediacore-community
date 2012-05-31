@@ -37,7 +37,9 @@ from mediacore.lib.util import url_for
 #from mediacore.model.players import fetch_players XXX: Import at EOF
 from mediacore.plugin.abc import AbstractClass, abstractmethod, abstractproperty
 
-from mediacore.controllers import check_user_autentication
+# from mediacore.model import Votation XXX: Import at EOF
+
+from mediacore.lib.util import check_user_autentication
 
 log = logging.getLogger(__name__)
 
@@ -956,11 +958,13 @@ def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
     """
     # devo controllare se l'utente e' autenticato o meno
     userid = check_user_autentication(request)
+    # check if current user has already voted this media object
+    votations = Votation.query.get_votations(media_id=media.id, user_name = userid)
 
-    if not userid:
+    if (not userid) or votations.count():
         show_like=False
         show_dislike=False
-        
+
     uris = media.get_uris()
 
     # Find the first player that can play any uris
@@ -1048,4 +1052,4 @@ def embed_iframe(media, width=400, height=225, frameborder=0, **kwargs):
 embed_player = embed_iframe
 
 from mediacore.model.players import fetch_enabled_players
-from mediacore.model import DBSession, Media
+from mediacore.model import DBSession, Media, Votation

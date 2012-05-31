@@ -176,3 +176,18 @@ def calculate_popularity(publish_date, score):
     t = delta.days * 86400 + delta.seconds
     popularity = math.log(max(abs(score), 1), log_base) + sign * t / base_life
     return max(int(popularity), 0)
+
+def check_user_autentication(request):
+    # devo controllare se l'utente e' autenticato o meno
+    if hasattr(request, 'identity'):
+        userid = request.identity['repoze.who.userid']
+    else:
+        request.identity = request.environ.get('repoze.who.identity')
+        if request.identity:
+            # current user is authenticated
+            userid = request.identity['repoze.who.userid']
+        else:
+            # current user is anonymous
+            userid = None
+
+    return userid

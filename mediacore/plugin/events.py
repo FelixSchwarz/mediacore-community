@@ -156,6 +156,11 @@ class Admin(object):
         edit = Event(['**kwargs'])
         save = Event(['**kwargs'])
         delete = Event(['**kwargs'])
+        
+    class VotationsController(object):
+        index = Event(['**kwargs'])
+        edit = Event(['**kwargs'])
+        save = Event(['**kwargs'])
 
 class API(object):
     class MediaController(object):
@@ -266,6 +271,14 @@ class MultiSetting(object):
     after_update = Event(['instance'])
 
 class User(object):
+    before_delete = Event(['instance'])
+    after_delete = Event(['instance'])
+    before_insert = Event(['instance'])
+    after_insert = Event(['instance'])
+    before_update = Event(['instance'])
+    after_update = Event(['instance'])
+
+class Votation(object):
     before_delete = Event(['instance'])
     after_delete = Event(['instance'])
     before_insert = Event(['instance'])

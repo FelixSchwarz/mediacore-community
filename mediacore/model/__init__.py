@@ -278,6 +278,7 @@ __all__ = [
     'Media', 'MediaFile',
     'Podcast',
     'PlayerPrefs',
+    'Votation',
 ]
 
 from mediacore.model.auth import User, Group, Permission
@@ -290,3 +291,4 @@ from mediacore.model.media import Media, MediaFile
 from mediacore.model.podcasts import Podcast
 from mediacore.model.players import PlayerPrefs, players, cleanup_players_table
 from mediacore.model.storage import storage
+from mediacore.model.votations import Votation

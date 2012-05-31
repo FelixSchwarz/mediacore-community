@@ -29,7 +29,7 @@ from pylons import url
 from pylons.controllers.util import forward, redirect_to
 
 from sqlalchemy import orm, sql
-from webob.exc import HTTPNotAcceptable, HTTPNotFound
+from webob.exc import HTTPNotAcceptable, HTTPNotFound, HTTPUnauthorized
 
 from mediacore import USER_AGENT
 from mediacore.forms.comments import PostCommentSchema
@@ -42,10 +42,11 @@ from mediacore.lib.helpers import (file_path, filter_vulgarity, redirect,
 from mediacore.lib.i18n import _
 from mediacore.lib.templating import render
 from mediacore.model import (DBSession, fetch_row, get_available_slug,
-    Media, MediaFile, Comment, Tag, Category, Author, AuthorWithIP, Podcast)
+    Media, MediaFile, Comment, Tag, Category, Author, AuthorWithIP,
+    Podcast, Votation)
 from mediacore.plugin import events
 
-from mediacore.controllers import check_user_autentication
+from mediacore.lib.util import check_user_autentication
 
 log = logging.getLogger(__name__)
 
@@ -239,18 +240,35 @@ class MediaController(BaseController):
         """
         # devo controllare se l'utente e' autenticato o meno
         userid = check_user_autentication(request)
-
         if not userid:
             log.warn('Anonymous user cannot rate media')
-            raise HTTPNotFound().exception
+            raise HTTPUnauthorized().exception
             
         media = fetch_row(Media, slug=slug)
+        
+        # check if current user has already voted this media object
+        votations = Votation.query.get_votations(media_id=media.id, user_name = userid)
+        if votations.count():
+            # if true redirect to 'view'
+            log.warn('User %s already voted this media')
+            redirect(action='view')
+
+        # create new votation object mapping current media and user
+        votation = Votation()
+        votation.media_id = media.id
+        votation.user_name = userid
+
+        # Give the Votation object an ID.
+        DBSession.add(votation)
+        DBSession.flush()
 
         if up:
+            votation.increment_likes()
             media.increment_likes()
         elif down:
+            votation.increment_dislikes()
             media.increment_dislikes()
-
+        
         if request.is_xhr:
             return u''
         else:
