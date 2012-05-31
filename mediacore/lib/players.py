@@ -21,6 +21,8 @@ from itertools import izip
 from urllib import urlencode
 from urlparse import urlsplit, urlunsplit
 
+from pylons import request
+
 from genshi.builder import Element
 from genshi.core import Markup
 
@@ -34,6 +36,8 @@ from mediacore.lib.uri import pick_uris
 from mediacore.lib.util import url_for
 #from mediacore.model.players import fetch_players XXX: Import at EOF
 from mediacore.plugin.abc import AbstractClass, abstractmethod, abstractproperty
+
+from mediacore.controllers import check_user_autentication
 
 log = logging.getLogger(__name__)
 
@@ -950,6 +954,13 @@ def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
     :rtype: `str` or `None`
     :returns: A rendered player.
     """
+    # devo controllare se l'utente e' autenticato o meno
+    userid = check_user_autentication(request)
+
+    if not userid:
+        show_like=False
+        show_dislike=False
+        
     uris = media.get_uris()
 
     # Find the first player that can play any uris

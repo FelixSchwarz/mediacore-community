@@ -25,7 +25,9 @@ from akismet import Akismet
 from paste.fileapp import FileApp
 from paste.util import mimeparse
 from pylons import app_globals, config, request, response
-from pylons.controllers.util import forward
+from pylons import url
+from pylons.controllers.util import forward, redirect_to
+
 from sqlalchemy import orm, sql
 from webob.exc import HTTPNotAcceptable, HTTPNotFound
 
@@ -43,9 +45,12 @@ from mediacore.model import (DBSession, fetch_row, get_available_slug,
     Media, MediaFile, Comment, Tag, Category, Author, AuthorWithIP, Podcast)
 from mediacore.plugin import events
 
+from mediacore.controllers import check_user_autentication
+
 log = logging.getLogger(__name__)
 
 comment_schema = PostCommentSchema()
+
 
 class MediaController(BaseController):
     """
@@ -232,6 +237,13 @@ class MediaController(BaseController):
             The new number of likes
 
         """
+        # devo controllare se l'utente e' autenticato o meno
+        userid = check_user_autentication(request)
+
+        if not userid:
+            log.warn('Anonymous user cannot rate media')
+            raise HTTPNotFound().exception
+            
         media = fetch_row(Media, slug=slug)
 
         if up:
