@@ -178,14 +178,14 @@ def calculate_popularity(publish_date, score):
     return max(int(popularity), 0)
 
 def check_user_autentication(request):
-    # devo controllare se l'utente e' autenticato o meno
+    # we have to check if current user is anonymous or authenticated
     if hasattr(request, 'identity'):
         userid = request.identity['repoze.who.userid']
     else:
-        request.identity = request.environ.get('repoze.who.identity')
-        if request.identity:
+        request_identity = request.environ.get('repoze.who.identity')
+        if request_identity:
             # current user is authenticated
-            userid = request.identity['repoze.who.userid']
+            userid = request_identity['repoze.who.userid']
         else:
             # current user is anonymous
             userid = None
