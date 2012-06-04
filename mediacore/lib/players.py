@@ -37,7 +37,7 @@ from mediacore.lib.util import url_for
 #from mediacore.model.players import fetch_players XXX: Import at EOF
 from mediacore.plugin.abc import AbstractClass, abstractmethod, abstractproperty
 
-# from mediacore.model import Votation XXX: Import at EOF
+# from mediacore.model import Vote XXX: Import at EOF
 
 from mediacore.lib.util import check_user_autentication
 
@@ -956,12 +956,12 @@ def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
     :rtype: `str` or `None`
     :returns: A rendered player.
     """
-    # devo controllare se l'utente e' autenticato o meno
+    # we have to check if current user is anonymous or authenticated
     userid = check_user_autentication(request)
     # check if current user has already voted this media object
-    votations = Votation.query.get_votations(media_id=media.id, user_name = userid)
+    votes = Vote.query.get_votes(media_id=media.id, user_name = userid)
 
-    if (not userid) or votations.count():
+    if (not userid) or votes.count():
         show_like=False
         show_dislike=False
 
@@ -1052,4 +1052,4 @@ def embed_iframe(media, width=400, height=225, frameborder=0, **kwargs):
 embed_player = embed_iframe
 
 from mediacore.model.players import fetch_enabled_players
-from mediacore.model import DBSession, Media, Votation
+from mediacore.model import DBSession, Media, Vote

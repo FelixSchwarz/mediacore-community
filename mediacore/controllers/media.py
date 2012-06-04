@@ -43,7 +43,7 @@ from mediacore.lib.i18n import _
 from mediacore.lib.templating import render
 from mediacore.model import (DBSession, fetch_row, get_available_slug,
     Media, MediaFile, Comment, Tag, Category, Author, AuthorWithIP,
-    Podcast, Votation)
+    Podcast, Vote)
 from mediacore.plugin import events
 
 from mediacore.lib.util import check_user_autentication
@@ -238,7 +238,7 @@ class MediaController(BaseController):
             The new number of likes
 
         """
-        # devo controllare se l'utente e' autenticato o meno
+        # we have to check if current user is anonymous or authenticated
         userid = check_user_autentication(request)
         if not userid:
             log.warn('Anonymous user cannot rate media')
@@ -247,26 +247,26 @@ class MediaController(BaseController):
         media = fetch_row(Media, slug=slug)
         
         # check if current user has already voted this media object
-        votations = Votation.query.get_votations(media_id=media.id, user_name = userid)
-        if votations.count():
+        votes = Vote.query.get_votes(media_id=media.id, user_name = userid)
+        if votes.count():
             # if true redirect to 'view'
             log.warn('User %s already voted this media')
             redirect(action='view')
 
-        # create new votation object mapping current media and user
-        votation = Votation()
-        votation.media_id = media.id
-        votation.user_name = userid
+        # create new vote object mapping current media and user
+        vote = Vote()
+        vote.media_id = media.id
+        vote.user_name = userid
 
-        # Give the Votation object an ID.
-        DBSession.add(votation)
+        # Give the Vote object an ID.
+        DBSession.add(vote)
         DBSession.flush()
 
         if up:
-            votation.increment_likes()
+            vote.increment_likes()
             media.increment_likes()
         elif down:
-            votation.increment_dislikes()
+            vote.increment_dislikes()
             media.increment_dislikes()
         
         if request.is_xhr:

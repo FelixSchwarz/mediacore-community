@@ -157,7 +157,7 @@ class Admin(object):
         save = Event(['**kwargs'])
         delete = Event(['**kwargs'])
         
-    class VotationsController(object):
+    class VotesController(object):
         index = Event(['**kwargs'])
         edit = Event(['**kwargs'])
         save = Event(['**kwargs'])
@@ -278,7 +278,7 @@ class User(object):
     before_update = Event(['instance'])
     after_update = Event(['instance'])
 
-class Votation(object):
+class Vote(object):
     before_delete = Event(['instance'])
     after_delete = Event(['instance'])
     before_insert = Event(['instance'])
