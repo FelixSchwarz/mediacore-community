@@ -11,3 +11,9 @@ If you require help with MediaCore customization or installation, check out:
 http://mediacore.com/services
 
 For versions documentation please refer to the /doc/dev/versions.rst file
+
+
+
+Acoi Voting feature
+-------------------
+See doc/versions.rst
