@@ -16,4 +16,4 @@ For versions documentation please refer to the /doc/dev/versions.rst file
 
 Acoi Voting feature
 -------------------
-See doc/versions.rst
+See doc/dev/versions.rst
