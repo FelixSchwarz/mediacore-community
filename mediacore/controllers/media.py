@@ -254,7 +254,7 @@ class MediaController(BaseController):
 
         """
         # we have to check if current user is anonymous or authenticated
-        userid = check_user_autentication(request)
+        userid = check_user_authentication(request)
         if not userid:
             log.warn('Anonymous user cannot rate media')
             raise HTTPUnauthorized().exception

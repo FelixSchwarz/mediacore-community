@@ -39,7 +39,7 @@ from mediacore.plugin.abc import AbstractClass, abstractmethod, abstractproperty
 
 # from mediacore.model import Vote XXX: Import at EOF
 
-from mediacore.lib.util import check_user_autentication
+from mediacore.lib.util import check_user_authentication
 
 log = logging.getLogger(__name__)
 
@@ -957,7 +957,7 @@ def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
     :returns: A rendered player.
     """
     # we have to check if current user is anonymous or authenticated
-    userid = check_user_autentication(request)
+    userid = check_user_authentication(request)
     # check if current user has already voted this media object
     votes = Vote.query.get_votes(media_id=media.id, user_name = userid)
 
