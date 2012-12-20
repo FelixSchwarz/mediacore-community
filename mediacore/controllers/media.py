@@ -29,7 +29,12 @@ from pylons import url
 from pylons.controllers.util import forward, redirect_to
 
 from sqlalchemy import orm, sql
-from webob.exc import HTTPNotAcceptable, HTTPNotFound, HTTPUnauthorized
+
+from webob.exc import (
+    HTTPNotAcceptable,
+    HTTPNotFound,
+    HTTPUnauthorized,
+)
 
 from mediacore import USER_AGENT
 from mediacore.forms.comments import PostCommentSchema
@@ -37,8 +42,11 @@ from mediacore.lib import helpers
 from mediacore.lib.base import BaseController
 from mediacore.lib.decorators import expose, expose_xhr, observable, paginate, validate, validate_xhr, autocommit
 from mediacore.lib.email import send_comment_notification
-from mediacore.lib.helpers import (file_path, filter_vulgarity, redirect,
-    store_transient_message, url_for)
+from mediacore.lib.helpers import (
+    file_path, filter_vulgarity, redirect,
+    store_transient_message, url_for,
+    has_permission,
+)
 from mediacore.lib.i18n import _
 from mediacore.lib.templating import render
 from mediacore.model import (DBSession, fetch_row, get_available_slug,
@@ -46,7 +54,10 @@ from mediacore.model import (DBSession, fetch_row, get_available_slug,
     Podcast, Vote)
 from mediacore.plugin import events
 
-from mediacore.lib.util import check_user_autentication
+from mediacore.lib.util import (
+    check_user_authentication,
+    get_authenticated_user,
+)
 
 log = logging.getLogger(__name__)
 
@@ -166,6 +177,9 @@ class MediaController(BaseController):
             podcast_slug = None
         redirect(action='view', slug=media.slug, podcast_slug=podcast_slug)
 
+    def can_comment(self):
+        return has_permission('comment')
+
     @expose('media/view.html')
     @autocommit
     @observable(events.MediaController.view)
@@ -215,6 +229,7 @@ class MediaController(BaseController):
             comments = media.comments.published().all(),
             comment_form_action = url_for(action='comment'),
             comment_form_values = kwargs,
+            can_comment = self.can_comment()
         )
 
     @expose('players/iframe.html')
@@ -278,13 +293,14 @@ class MediaController(BaseController):
     @validate_xhr(comment_schema, error_handler=view)
     @autocommit
     @observable(events.MediaController.comment)
-    def comment(self, slug, name='', email=None, body='', **kwargs):
+    def comment(self, slug, body='', **kwargs):
         """Post a comment from :class:`~mediacore.forms.comments.PostCommentForm`.
 
         :param slug: The media :attr:`~mediacore.model.media.Media.slug`
         :returns: Redirect to :meth:`view` page for media.
 
         """
+
         def result(success, message=None, comment=None):
             if request.is_xhr:
                 result = dict(success=success, message=message)
@@ -298,6 +314,13 @@ class MediaController(BaseController):
             else:
                 return self.view(slug, name=name, email=email, body=body,
                                  **kwargs)
+
+        userid = check_user_authentication(request)
+        if not userid:
+            log.warn('Anonymous user cannot comment media')
+            raise HTTPUnauthorized().exception
+
+        user = get_authenticated_user(request)
 
         akismet_key = request.settings['akismet_key']
         if akismet_key:
@@ -317,28 +340,30 @@ class MediaController(BaseController):
 
         media = fetch_row(Media, slug=slug)
 
-        c = Comment()
+        name = user.user_name
+        email = user.email_address
+        cmt = Comment()
 
         name = filter_vulgarity(name)
-        c.author = AuthorWithIP(name, email, request.environ['REMOTE_ADDR'])
-        c.subject = 'Re: %s' % media.title
-        c.body = filter_vulgarity(body)
+        cmt.author = AuthorWithIP(name, email, request.environ['REMOTE_ADDR'])
+        cmt.subject = 'Re: %s' % media.title
+        cmt.body = filter_vulgarity(body)
 
         require_review = request.settings['req_comment_approval']
         if not require_review:
-            c.reviewed = True
-            c.publishable = True
+            cmt.reviewed = True
+            cmt.publishable = True
 
-        media.comments.append(c)
+        media.comments.append(cmt)
         DBSession.flush()
-        send_comment_notification(media, c)
+        send_comment_notification(media, cmt)
 
         if require_review:
             message = _('Thank you for your comment! We will post it just as '
                         'soon as a moderator approves it.')
             return result(True, message=message)
         else:
-            return result(True, comment=c)
+            return result(True, comment=cmt)
 
     @expose()
     def serve(self, id, download=False, **kwargs):
