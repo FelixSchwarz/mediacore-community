@@ -27,7 +27,11 @@ from paste.util import mimeparse
 from pylons import app_globals, config, request, response
 from pylons.controllers.util import forward
 from sqlalchemy import orm, sql
-from webob.exc import HTTPNotAcceptable, HTTPNotFound
+from webob.exc import (
+    HTTPNotAcceptable,
+    HTTPNotFound,
+    HTTPUnauthorized,
+)
 
 from mediacore import USER_AGENT
 from mediacore.forms.comments import PostCommentSchema
@@ -45,6 +49,11 @@ from mediacore.lib.templating import render
 from mediacore.model import (DBSession, fetch_row, get_available_slug,
     Media, MediaFile, Comment, Tag, Category, Author, AuthorWithIP, Podcast)
 from mediacore.plugin import events
+
+from mediacore.lib.util import (
+    check_user_authentication,
+    get_authenticated_user,
+)
 
 log = logging.getLogger(__name__)
 
@@ -255,7 +264,7 @@ class MediaController(BaseController):
     @validate_xhr(comment_schema, error_handler=view)
     @autocommit
     @observable(events.MediaController.comment)
-    def comment(self, slug, name='', email=None, body='', **kwargs):
+    def comment(self, slug, body='', **kwargs):
         """Post a comment from :class:`~mediacore.forms.comments.PostCommentForm`.
 
         :param slug: The media :attr:`~mediacore.model.media.Media.slug`
@@ -277,6 +286,13 @@ class MediaController(BaseController):
                 return self.view(slug, name=name, email=email, body=body,
                                  **kwargs)
 
+        userid = check_user_authentication(request)
+        if not userid:
+            log.warn('Anonymous user cannot comment media')
+            raise HTTPUnauthorized().exception
+
+        user = get_authenticated_user(request)
+
         akismet_key = request.settings['akismet_key']
         if akismet_key:
             akismet = Akismet(agent=USER_AGENT)
@@ -295,28 +311,30 @@ class MediaController(BaseController):
 
         media = fetch_row(Media, slug=slug)
 
-        c = Comment()
+        name = user.user_name
+        email = user.email_address
+        cmt = Comment()
 
         name = filter_vulgarity(name)
-        c.author = AuthorWithIP(name, email, request.environ['REMOTE_ADDR'])
-        c.subject = 'Re: %s' % media.title
-        c.body = filter_vulgarity(body)
+        cmt.author = AuthorWithIP(name, email, request.environ['REMOTE_ADDR'])
+        cmt.subject = 'Re: %s' % media.title
+        cmt.body = filter_vulgarity(body)
 
         require_review = request.settings['req_comment_approval']
         if not require_review:
-            c.reviewed = True
-            c.publishable = True
+            cmt.reviewed = True
+            cmt.publishable = True
 
-        media.comments.append(c)
+        media.comments.append(cmt)
         DBSession.flush()
-        send_comment_notification(media, c)
+        send_comment_notification(media, cmt)
 
         if require_review:
             message = _('Thank you for your comment! We will post it just as '
                         'soon as a moderator approves it.')
             return result(True, message=message)
         else:
-            return result(True, comment=c)
+            return result(True, comment=cmt)
 
     @expose()
     def serve(self, id, download=False, **kwargs):

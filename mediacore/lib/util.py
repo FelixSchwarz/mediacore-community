@@ -176,3 +176,40 @@ def calculate_popularity(publish_date, score):
     t = delta.days * 86400 + delta.seconds
     popularity = math.log(max(abs(score), 1), log_base) + sign * t / base_life
     return max(int(popularity), 0)
+
+
+def check_user_authentication(request):
+    # XXX: this is fake check just to mimic the one from the branc 'acoi'
+    # that really implements authentication
+    # NOTE: the method from 'acoi' branch has a typo 'autentication'
+    # DROP THIS AFTER MERGE
+    return 'admin'
+
+
+# def get_authenticated_user(request):
+#     # we have to check if current user is anonymous or authenticated
+#     if hasattr(request, 'identity'):
+#         userid = request.identity['repoze.who.userid']
+#         # XXX: do something here to get user data
+#     else:
+#         request_identity = request.environ.get('repoze.who.identity')
+#         if request_identity:
+#             return request.get('user')
+
+#     return None
+
+
+def get_authenticated_user(request):
+    # XXX: this is a fake method just to test getting user data
+    # the real method will be the one above once 'acoi' branch gets merged
+    from acoi.mediacore.models import User
+    fake_data = dict(
+        created = '2011-12-05T11:33:44.248022',
+        display_name = '',
+        email_address = 'pippo@mediacore.it',
+        groups = ['users',],
+        query = None,
+        user_id = 'pippo',
+        user_name = 'pippo',
+    )
+    return User(**fake_data)
