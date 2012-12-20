@@ -267,11 +267,17 @@ class MediaController(BaseController):
         DBSession.flush()
 
         if id == 'new' and not has_thumbs(media):
-            create_default_thumbs_for(media)
+            try:
+                create_default_thumbs_for(media)
+            except:
+                pass
 
         if id != 'new' and has_default_thumbs(media):
             if media.files:
-                self.generate_thumb_from_video(media)
+                try:
+                    self.generate_thumb_from_video(media)
+                except:
+                    pass
 
         if request.is_xhr:
             status_form_xhtml = unicode(update_status_form.display(
