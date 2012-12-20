@@ -60,7 +60,7 @@
 				<div class="comment-content" />
 				<div class="comment-bottom" />
 			</div>
-			<py:if test="action">
+			<py:if test="action and can_comment">
 				<form id="post-comment-form" action="${action}" method="post" class="required form">
 				<br />
 				<h3>Write a comment</h3>

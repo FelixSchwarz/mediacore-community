@@ -35,8 +35,11 @@ from mediacore.lib import helpers
 from mediacore.lib.base import BaseController
 from mediacore.lib.decorators import expose, expose_xhr, observable, paginate, validate, validate_xhr, autocommit
 from mediacore.lib.email import send_comment_notification
-from mediacore.lib.helpers import (file_path, filter_vulgarity, redirect,
-    store_transient_message, url_for)
+from mediacore.lib.helpers import (
+    file_path, filter_vulgarity, redirect,
+    store_transient_message, url_for,
+    has_permission,
+)
 from mediacore.lib.i18n import _
 from mediacore.lib.templating import render
 from mediacore.model import (DBSession, fetch_row, get_available_slug,
@@ -160,6 +163,9 @@ class MediaController(BaseController):
             podcast_slug = None
         redirect(action='view', slug=media.slug, podcast_slug=podcast_slug)
 
+    def can_comment(self):
+        return has_permission('comment')
+
     @expose('media/view.html')
     @autocommit
     @observable(events.MediaController.view)
@@ -209,6 +215,7 @@ class MediaController(BaseController):
             comments = media.comments.published().all(),
             comment_form_action = url_for(action='comment'),
             comment_form_values = kwargs,
+            can_comment = self.can_comment()
         )
 
     @expose('players/iframe.html')
@@ -255,6 +262,7 @@ class MediaController(BaseController):
         :returns: Redirect to :meth:`view` page for media.
 
         """
+
         def result(success, message=None, comment=None):
             if request.is_xhr:
                 result = dict(success=success, message=message)

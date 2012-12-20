@@ -202,6 +202,11 @@ def add_default_data():
     editor_group.display_name = u'Editors'
     DBSession.add(editor_group)
 
+    commenter_group = Group()
+    commenter_group.group_name = u'commenters'
+    commenter_group.display_name = u'Commenters'
+    DBSession.add(commenter_group)
+
     admin_perm = Permission()
     admin_perm.permission_name = u'admin'
     admin_perm.description = u'Grants access to the admin panel'
@@ -214,6 +219,15 @@ def add_default_data():
     edit_perm.groups.append(admin_group)
     edit_perm.groups.append(editor_group)
     DBSession.add(edit_perm)
+
+    comment_perm = Permission()
+    comment_perm.permission_name = u'comment'
+    comment_perm.description = u'Grants access to add comments'
+    comment_perm.groups.append(admin_group)
+    comment_perm.groups.append(editor_group)
+    comment_perm.groups.append(user_group)
+    comment_perm.groups.append(commenter_group)
+    DBSession.add(comment_perm)
 
     category = Category()
     category.name = u'Featured'
