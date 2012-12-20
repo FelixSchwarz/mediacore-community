@@ -202,6 +202,11 @@ def add_default_data():
     editor_group.display_name = u'Editors'
     DBSession.add(editor_group)
 
+    user_group = Group()
+    user_group.group_name = u'users'
+    user_group.display_name = u'Users'
+    DBSession.add(user_group)
+
     commenter_group = Group()
     commenter_group.group_name = u'commenters'
     commenter_group.display_name = u'Commenters'
@@ -219,6 +224,14 @@ def add_default_data():
     edit_perm.groups.append(admin_group)
     edit_perm.groups.append(editor_group)
     DBSession.add(edit_perm)
+
+    view_perm = Permission()
+    view_perm.permission_name = u'view'
+    view_perm.description = u'Grants access to view site content'
+    view_perm.groups.append(admin_group)
+    view_perm.groups.append(editor_group)
+    view_perm.groups.append(user_group)
+    DBSession.add(view_perm)
 
     comment_perm = Permission()
     comment_perm.permission_name = u'comment'
