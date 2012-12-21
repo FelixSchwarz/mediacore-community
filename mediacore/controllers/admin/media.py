@@ -17,6 +17,8 @@
 Media Admin Controller
 """
 import os
+import subprocess
+from mediacore.lib.thumbnails import create_thumbs_for
 from datetime import datetime
 from itertools import izip
 
@@ -202,6 +204,27 @@ class MediaController(BaseController):
             update_status_action = url_for(action='update_status'),
         )
 
+    def generate_thumb_from_video(self, media):
+        m_img_dir = config['image_dir'] + os.sep + Media._thumb_dir + os.sep
+        for current_file in media.files:
+            if current_file.type == 'video':
+                video_path = config['media_dir'] + os.sep + current_file.unique_id
+                thumbname = str(media.id)
+                frame_args = {'path': m_img_dir, 'filename': thumbname}
+                frame = "%(path)s%(filename)s.jpg" % frame_args
+
+                #cmd_args = {'frames': 10, 'video_path': url, 'output': frame}
+                #command = "ffmpeg -y -vframes %(frames)d -i %(video_path)s -f image2 %(output)s"
+                cmd_args = {'option': '-ss 0:01:00 -t 00:00:01',
+                            'video_path': video_path, 'output': frame}
+                command = "ffmpeg -y %(option)s -i %(video_path)s -f image2 %(output)s"
+                command = command % cmd_args
+
+                subprocess.call(command, shell=True,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                create_thumbs_for(media, frame, thumbname)
+                os.remove(frame)
+
     @expose_xhr(request_method='POST')
     @validate_xhr(media_form, error_handler=edit)
     @autocommit
@@ -244,7 +267,17 @@ class MediaController(BaseController):
         DBSession.flush()
 
         if id == 'new' and not has_thumbs(media):
-            create_default_thumbs_for(media)
+            try:
+                create_default_thumbs_for(media)
+            except:
+                pass
+
+        if id != 'new' and has_default_thumbs(media):
+            if media.files:
+                try:
+                    self.generate_thumb_from_video(media)
+                except:
+                    pass
 
         if request.is_xhr:
             status_form_xhtml = unicode(update_status_form.display(
