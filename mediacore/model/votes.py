@@ -12,7 +12,7 @@ from mediacore.plugin import events
 votes = Table('votes', metadata,
     Column('id', Integer, autoincrement=True, primary_key=True),
     Column('media_id', Integer, ForeignKey('media.id', onupdate='CASCADE', ondelete='CASCADE')),
-    Column('user_name', Unicode(16), nullable=False),
+    Column('user_name', Unicode(64), nullable=False),
     Column('likes', Integer, default=0, nullable=False),
     Column('dislikes', Integer, default=0, nullable=False),
     Column('vote_date', DateTime, default=datetime.now, nullable=False),
