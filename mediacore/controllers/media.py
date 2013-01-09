@@ -145,19 +145,24 @@ class MediaController(BaseController):
         popular = media.order_by(Media.popularity_points.desc())
         featured = None
 
-        featured_cat = helpers.get_featured_category()
-        if featured_cat:
-            featured = latest.in_category(featured_cat).first()
-        if not featured:
-            featured = popular.first()
+        # get featured videos. if none, first one from popular is used
+        # featured_cat = helpers.get_featured_category()
+        # if featured_cat:
+        #     featured = latest.in_category(featured_cat).first()
+        # if not featured:
+        #     featured = popular.first()
 
         latest = latest.exclude(featured)[:8]
-        popular = popular.exclude(featured, latest)[:5]
+        most_voted = None
+        if popular:
+            most_voted = popular.first()
+        popular = popular.exclude(most_voted)[:5]
 
         return dict(
             featured = featured,
             latest = latest,
             popular = popular,
+            most_voted = most_voted,
             categories = Category.query.populated_tree(),
         )
 

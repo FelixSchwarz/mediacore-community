@@ -79,7 +79,8 @@
 		</script>
 	</py:if>
 		<div id="explore-popular" class="m-grid-column" style="margin-right:20px">
-			<py:if test="featured and settings['appearance_enable_featured_items']">
+			<!-- FEATURED -->
+			<!-- <py:if test="featured and settings['appearance_enable_featured_items']">
 			<h2><span class="mcore-heading uppercase">Featured</span></h2>
 			<div class="feat-box">
 				<div class="feat-top" />
@@ -90,6 +91,23 @@
 						<span class="meta meta-comments">${featured.comment_count_published} ${ungettext('Comment', 'Comments', featured.comment_count_published)}</span>
 						<span py:if="settings['appearance_show_like']" class="meta meta-likes"><span id="mcore-likes-counter">${featured.likes}</span> ${ungettext('Like', 'Likes', featured.likes)}</span>
 						<span class="meta meta-views">${featured.views} ${ungettext('View', 'Views', featured.views)}</span>
+					</div>
+				</div>
+				<div class="feat-bottom" />
+			</div>
+			</py:if> -->
+			<!-- MOST VOTED -->
+			<py:if test="most_voted and settings['appearance_enable_featured_items']">
+			<h2><span class="mcore-heading uppercase">Il piú votato</span></h2>
+			<div class="feat-box">
+				<div class="feat-top" />
+				<div class="feat-content clearfix">
+					${h.media_player(most_voted, width=410, height=231)}
+					<h3><a class="underline-hover" href="${h.url_for(controller='/media', action='view', slug=most_voted.slug)}">${most_voted.title}</a></h3>
+					<div class="feat-meta">
+						<span class="meta meta-comments">${most_voted.comment_count_published} ${ungettext('Comment', 'Comments', most_voted.comment_count_published)}</span>
+						<span py:if="settings['appearance_show_like']" class="meta meta-likes"><span id="mcore-likes-counter">${most_voted.likes}</span> ${ungettext('Like', 'Likes', most_voted.likes)}</span>
+						<span class="meta meta-views">${most_voted.views} ${ungettext('View', 'Views', most_voted.views)}</span>
 					</div>
 				</div>
 				<div class="feat-bottom" />

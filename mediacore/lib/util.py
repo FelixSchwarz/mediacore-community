@@ -204,4 +204,6 @@ def get_authenticated_user(request):
         if request_identity:
             # XXX: check if user is none?
             user = request_identity.get('user')
+        else:
+            user = None
     return user
