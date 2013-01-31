@@ -148,6 +148,9 @@ def merge_dicts(dst, *srcs):
     return dst
 
 def calculate_popularity(publish_date, score):
+    return score
+
+def ORIG_calculate_popularity(publish_date, score):
     """Calculate how 'hot' an item is given its response since publication.
 
     In our ranking algorithm, being base_life_hours newer is equivalent

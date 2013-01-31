@@ -153,16 +153,17 @@ class MediaController(BaseController):
         #     featured = popular.first()
 
         latest = latest.exclude(featured)[:8]
-        most_voted = None
+        most_popular_highlight = None
         if popular:
-            most_voted = popular.first()
-        popular = popular.exclude(most_voted)[:5]
+            # we get highlight as the a random choose among the top 10 popular media
+            most_popular_highlight = popular.limit(10).from_self().order_by(sql.func.random()).first()
+        popular = popular.exclude(most_popular_highlight)[:5]
 
         return dict(
             featured = featured,
             latest = latest,
             popular = popular,
-            most_voted = most_voted,
+            most_popular_highlight = most_popular_highlight,
             categories = Category.query.populated_tree(),
         )
 

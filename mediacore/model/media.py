@@ -358,6 +358,19 @@ class MediaQuery(Query):
                      media_categories.c.category_id.in_(all_ids))
         )))
 
+    def in_tag(self, tag):
+        """Filter results to Media in the given category"""
+        return self.in_tags([tag])
+
+    def in_tags(self, tags):
+        """Filter results to Media in at least one of the given tags"""
+        all_ids = [c.id for c in tags]
+        return self.filter(sql.exists(sql.select(
+            [media_tags.c.media_id],
+            sql.and_(media_tags.c.media_id == Media.id,
+                     media_tags.c.tag_id.in_(all_ids),)
+        )))
+
     def exclude(self, *args):
         """Exclude the given Media rows or IDs from the results.
 
@@ -384,9 +397,9 @@ class MediaQuery(Query):
         query = self.published().filter(Media.id != media.id)
 
         # XXX: If full text searching is not enabled, we simply return media
-        #      in the same categories.
+        #      in the same tags.
         if not self._fulltext_enabled():
-            return query.in_categories(media.categories)
+            return query.in_tags(media.tags)
 
         search_terms = '%s %s %s' % (
             media.title,

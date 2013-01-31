@@ -25,6 +25,8 @@ from datetime import datetime
 from urllib import quote, unquote, urlencode
 from urlparse import urlparse
 
+from sqlalchemy import orm
+
 from genshi.core import Stream
 from pylons import app_globals, config, request, response, translator
 from webhelpers import date, feedgenerator, html, number, misc, text, paginate, containers
@@ -96,6 +98,7 @@ __all__ = [
     'filter_library_controls',
     'filter_vulgarity',
     'get_featured_category',
+    'get_highlight_media',
     'gravatar_from_email',
     'is_admin',
     'js',
@@ -266,6 +269,24 @@ def get_featured_category():
         return None
     feat_id = int(feat_id)
     return Category.query.get(feat_id)
+
+def get_highlight_category():
+    from mediacore.model import Category
+    cat = Category.query.filter_by(slug='in-evidenza')
+    try:
+        return cat.one()
+    except orm.exc.NoResultFound:
+        pass
+
+def get_highlight_media():
+    from mediacore.model import Media
+    media = Media.query.published()
+    latest = media.order_by(Media.publish_on.desc())
+    highlight_cat = get_highlight_category()
+    highlight = None
+    if highlight_cat:
+        highlight = latest.in_category(highlight_cat).first()
+    return highlight
 
 def filter_library_controls(query, show='latest'):
     from mediacore.model import Media
