@@ -180,3 +180,22 @@
 	margin-top: 0;
 	padding-top: 0;
 }
+
+/* 
+XXX 08/05/2013: fix strange behaviour where upload video form popup
+is not showed. We must show '.box-round' and hide rounded corners.
+*/
+
+
+#sbox-content .box-round {
+    display: block !important;
+}
+#sbox-content .box-round-top-lft,
+#sbox-content .box-round-top-rgt,
+#sbox-content .box-round-top-mid,
+#sbox-content .box-round-bot-lft,
+#sbox-content .box-round-bot-rgt,
+#sbox-content .box-round-bot-mid{
+    display:none;
+}
+
