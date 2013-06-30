@@ -301,7 +301,7 @@ msgstr "Sélectionnez dans votre ordinateur un fichier vidéo ou audio encodé"
 #: mediacore/templates/admin/settings/upload.html:16
 #: mediacore/templates/admin/settings/upload.html:22
 msgid "Upload"
-msgstr "Téléverser"
+msgstr "Soumettre une vidéo"
 
 #: mediacore/forms/admin/media.py:111
 msgid "Add URL"
@@ -716,7 +716,7 @@ msgstr "Langue par défaut"
 
 #: mediacore/forms/admin/settings.py:227
 msgid "Featured Category"
-msgstr "Catégorie à l’affiche"
+msgstr "Catégorie Dans l'Actualité"
 
 #: mediacore/forms/admin/settings.py:232
 msgid "Rich Text Editing"
@@ -1364,7 +1364,7 @@ msgstr "Les plus populaires"
 #: mediacore/templates/media/explore.html:40
 #: mediacore/templates/media/explore.html:77
 msgid "Featured"
-msgstr "À l’affiche"
+msgstr "Dans l'actualité"
 
 #: mediacore/templates/helpers.html:80
 msgid "Page"
@@ -1415,7 +1415,7 @@ msgstr "Bibliothèque"
 #: mediacore/templates/admin/podcasts/index.html:17
 #: mediacore/templates/admin/podcasts/index.html:24
 msgid "Podcasts"
-msgstr "Podcasts"
+msgstr "Émissions"
 
 #: mediacore/templates/master.html:88
 msgid "Search"

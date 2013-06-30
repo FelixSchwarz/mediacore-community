@@ -37,6 +37,10 @@ See LICENSE.txt in the main project directory, for more information.
 				</li>
 			</ul>
 			${cat_list(c.categories, c.breadcrumb)}
+			<h3 class="mcore-heading">All Tags</h3>
+			<ul id="tag-directory" class="clearfix">
+				<li py:for="tag in tags"><a href="${h.url_for(controller='/media', action='index', tag=tag.slug)}">${tag.name}</a> (${tag.media_count_published})</li>
+			</ul>
 		</div>
 		<div id="category-content" class="clearfix" py:content="select('*|text()')">Content is injected here</div>
 	</div>

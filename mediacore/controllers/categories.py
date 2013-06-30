@@ -13,7 +13,7 @@ from mediacore.lib.base import BaseController
 from mediacore.lib.decorators import (beaker_cache, expose, observable, 
     paginate, validate)
 from mediacore.lib.helpers import content_type_for_response, viewable_media
-from mediacore.model import Category, Media, fetch_row
+from mediacore.model import Category, Media, fetch_row, Tag
 from mediacore.plugin import events
 from mediacore.validation import LimitFeedItemsValidator
 
@@ -67,9 +67,14 @@ class CategoriesController(BaseController):
         latest = viewable_media(latest)[:5]
         popular = viewable_media(popular.exclude(latest))[:5]
 
+        tags = Tag.query\
+            .options(orm.undefer('media_count_published'))\
+            .filter(Tag.media_count_published > 0)
+
         return dict(
             latest = latest,
             popular = popular,
+            tags = tags,
         )
 
     @expose('categories/more.html')

@@ -90,7 +90,7 @@ See LICENSE.txt in the main project directory, for more information.
 			</div>
 			</py:if>
 
-			<h2><a href="${h.url_for(action='index', show='popular')}" class="underline-hover uppercase mcore-heading">Most Popular</a></h2>
+			<!--<h2><a href="${h.url_for(action='index', show='popular')}" class="underline-hover uppercase mcore-heading">Most Popular</a></h2>
 			<py:if test="popular">
 				<ul py:replace="media_grid(popular, thumb_size='m', desc_len=135)" />
 				<a class="mcore-btn mcore-btn-grey mcore-btn-more" href="${h.url_for(action='index', show='popular')}"><span>${h.best_translation(N_('More popular media'), N_('View More'))}</span></a>
@@ -102,7 +102,7 @@ See LICENSE.txt in the main project directory, for more information.
 					<a py:if="h.is_admin()" href="${h.url_for(controller='/admin/media', action='edit', id='new')}">Why not add a few more?</a>
 				</div>
 				<div class="feat-bottom"/>
-			</div>
+			</div>-->
 		</div>
 
 		<div py:if="latest" id="explore-latest" class="m-grid-column">
