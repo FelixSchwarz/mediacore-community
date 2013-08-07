@@ -28,14 +28,14 @@ from webhelpers.html.converters import format_paragraphs
 
 from mediacore.lib.auth import viewable_media
 from mediacore.lib.compat import any, md5
-from mediacore.lib.i18n import (N_, _, format_date, format_datetime, 
+from mediacore.lib.i18n import (N_, _, format_date, format_datetime,
     format_decimal, format_time)
-from mediacore.lib.players import (embed_player, embed_iframe, media_player,
+from mediacore.lib.players import (embed_player, embed_iframe, embed_featured, media_player,
     pick_any_media_file, pick_podcast_media_file)
 from mediacore.lib.thumbnails import thumb, thumb_url
 from mediacore.lib.uri import (best_link_uri, download_uri, file_path,
     pick_uri, pick_uris, web_uri)
-from mediacore.lib.util import (current_url, delete_files, merge_dicts, 
+from mediacore.lib.util import (current_url, delete_files, merge_dicts,
     redirect, url, url_for, url_for_media)
 from mediacore.lib.xhtml import (clean_xhtml, decode_entities, encode_entities,
     excerpt_xhtml, line_break_xhtml, list_acceptable_xhtml, strip_xhtml,
@@ -182,7 +182,7 @@ def content_type_for_response(available_formats):
     # content types (e.g. just 'text/html' like some bots) we still need to
     # set a content type, otherwise the WebOb will generate an exception
     # AttributeError: You cannot access Response.unicode_body unless charset
-    # the only alternative to forcing a "bad" content type would be not to 
+    # the only alternative to forcing a "bad" content type would be not to
     # deliver any content at all - however most bots are just faulty and they
     # requested something like 'sitemap.xml'.
     return content_type or available_formats[0]
@@ -329,7 +329,7 @@ def can_edit(item=None):
     :rtype: bool
     """
     if item is not None:
-        warnings.warn(u'"item" parameter for can_edit() is deprecated', 
+        warnings.warn(u'"item" parameter for can_edit() is deprecated',
           DeprecationWarning, stacklevel=2)
     return has_permission(u'edit')
 
