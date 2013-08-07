@@ -80,9 +80,9 @@ class NotificationsForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.NotificationsForm
-    
+
     fields = [
         ListFieldSet('email', suppress_label=True, legend=N_('Email Notifications:'), css_classes=['details_fieldset'], children=[
             TextField('email_media_uploaded', validator=email_list_validator, label_text=N_('Media Uploaded'), maxlength=255),
@@ -99,9 +99,9 @@ class PopularityForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.PopularityForm
-    
+
     fields = [
         ListFieldSet('popularity',
             suppress_label=True,
@@ -138,9 +138,9 @@ class UploadForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.UploadForm
-    
+
     fields = [
         TextField('max_upload_size', label_text=N_('Max. allowed upload file size in megabytes'), validator=MegaByteValidator(not_empty=True, min=0)),
         ListFieldSet('legal_wording', suppress_label=True, legend=N_('Legal Wording:'), css_classes=['details_fieldset'], children=[
@@ -154,9 +154,9 @@ class AnalyticsForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.AnalyticsForm
-    
+
     fields = [
         ListFieldSet('google', suppress_label=True, legend=N_('Google Analytics Details:'), css_classes=['details_fieldset'], children=[
             TextField('google_analytics_uacct', maxlength=255, label_text=N_('Tracking Code')),
@@ -169,9 +169,9 @@ class SiteMapsForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.SiteMapsForm
-    
+
     fields = [
         ListFieldSet('rss', suppress_label=True,
             legend='',
@@ -192,7 +192,7 @@ class SiteMapsForm(ListForm):
             css_classes=['details_fieldset'],
             legend=N_('RSS Feed Defaults:'),
             children=[
-                TextField(u'default_feed_results', validator=Int(not_empty=True, min=1, if_missing=30), 
+                TextField(u'default_feed_results', validator=Int(not_empty=True, min=1, if_missing=30),
                     label_text=N_(u'number of items'),
                     help_text=N_(u'The number of items in the feed can be overriden per request '
                                  U'if you add "?limit=X" to the feed URL. If the "limit" parameter '
@@ -208,9 +208,9 @@ class GeneralForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.GeneralForm
-    
+
     fields = [
         ListFieldSet('general', suppress_label=True, legend=N_('General Settings:'), css_classes=['details_fieldset'], children=[
             TextField('general_site_name', maxlength=255,
@@ -242,9 +242,9 @@ class CommentsForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.CommentsForm
-    
+
     fields = [
        RadioButtonList('comments_engine',
             label_text=N_('Comment Engine'),
@@ -276,9 +276,9 @@ class APIForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.APIForm
-    
+
     fields = [
         boolean_radiobuttonlist('api_secret_key_required', label_text=N_('Require a key to access the API')),
         ListFieldSet('key', suppress_label=True, legend=N_('API Key:'), css_classes=['details_fieldset'], children=[
@@ -296,9 +296,9 @@ class AppearanceForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.AppearanceForm
-    
+
     fields = [
         ListFieldSet('general', suppress_label=True, legend=N_('General'),
             css_classes=['details_fieldset'],
@@ -316,6 +316,13 @@ class AppearanceForm(ListForm):
                     css_classes=[],
                     default=lambda: request.settings.get('appearance_background_image', \
                                                              'bg_image.png'),
+                    template='./admin/settings/appearance_input_field.html'),
+                FileField('appearance_player_brand', label_text=N_('Player toolbar Image'),
+                    validator=FieldStorageUploadConverter(not_empty=False,
+                        label_text=N_('Upload a little icon for the player toolbar')),
+                    css_classes=[],
+                    default=lambda: request.settings.get('appearance_player_brand', \
+                                                             None),
                     template='./admin/settings/appearance_input_field.html'),
                 TextField('appearance_background_color', maxlength=255,
                     label_text=N_('Background color'),
@@ -401,6 +408,10 @@ class AppearanceForm(ListForm):
                     css_classes=['checkbox-left'],
                     label_text=N_('Enable Embed button on player menu bar.'),
                     validator=Bool(if_missing='')),
+                CheckBox('appearance_show_player_brand',
+                    css_classes=['checkbox-left'],
+                    label_text=N_('Enable Logo on player menu bar.'),
+                    validator=Bool(if_missing='')),
                 CheckBox('appearance_show_widescreen',
                     css_classes=['checkbox-left'],
                     label_text=N_('Enable Widescreen toggle button on player menu bar.'),
@@ -451,9 +462,9 @@ class AdvertisingForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-    
+
     event = events.Admin.Settings.AdvertisingForm
-    
+
     fields = [
         ListFieldSet('advanced', suppress_label=True, legend='',
             css_classes=['details_fieldset'],
