@@ -60,6 +60,7 @@ appearance_settings = [
     (u'appearance_show_download', u'True'),
     (u'appearance_show_share', u'True'),
     (u'appearance_show_embed', u'True'),
+    (u'appearance_player_brand', u''),
     (u'appearance_show_widescreen', u'True'),
     (u'appearance_show_popout', u'True'),
     (u'appearance_show_like', u'True'),
@@ -212,21 +213,21 @@ def add_default_data():
     authenticated_group = Group(name=u'authenticated', display_name=u'Logged in users')
     DBSession.add(authenticated_group)
 
-    admin_perm = Permission(name=u'admin', groups=[admin_group], 
+    admin_perm = Permission(name=u'admin', groups=[admin_group],
         description=u'Grants access to the admin panel')
     DBSession.add(admin_perm)
 
-    edit_perm = Permission(name=u'edit', groups=[admin_group, editor_group], 
+    edit_perm = Permission(name=u'edit', groups=[admin_group, editor_group],
         description=u'Grants access to edit site content')
     DBSession.add(edit_perm)
-    
-    view_perm = Permission(name=u'view', 
-        groups=[admin_group, anonymous_group, editor_group], 
+
+    view_perm = Permission(name=u'view',
+        groups=[admin_group, anonymous_group, editor_group],
         description=u'View published media')
     DBSession.add(view_perm)
 
-    upload_perm = Permission(name=u'upload', 
-        groups=[admin_group, anonymous_group, editor_group], 
+    upload_perm = Permission(name=u'upload',
+        groups=[admin_group, anonymous_group, editor_group],
         description=u'Can upload new media')
     DBSession.add(upload_perm)
     media_upload_perm = Permission()
@@ -419,9 +420,17 @@ def generate_appearance_css(settings, cache_dir=None):
     vars = dict((k.encode('utf-8'), v.encode('utf-8'))
                 for k, v in settings
                 if k.startswith('appearance_'))
+
     vars['uikit_colors'] = uikit_colors[
         vars['appearance_navigation_bar_color']]
     vars['navbar_color'] = vars['appearance_navigation_bar_color']
+
+    vars['player_brand'] = False
+    if len(vars['appearance_player_brand']) > 0:
+        logo_path = os.path.join(appearance_dir, vars['appearance_player_brand'])
+        if os.path.exists(logo_path):
+            #vars['logo_height'] = Image.open(logo_path).size[1]
+            vars['player_brand'] = logo_path
 
     if vars['appearance_logo']:
         logo_path = os.path.join(appearance_dir, vars['appearance_logo'])
