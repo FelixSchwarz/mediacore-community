@@ -140,12 +140,12 @@ class AbstractPlayer(AbstractClass):
 
         """
         return pick_uris(self.uris, **kwargs)
-    
+
     @classmethod
     def inject_in_db(cls, enable_player=False):
         from mediacore.model import DBSession
         from mediacore.model.players import players as players_table, PlayerPrefs
-        
+
         prefs = PlayerPrefs()
         prefs.name = cls.name
         prefs.enabled = enable_player
@@ -531,11 +531,11 @@ class YoutubePlayer(AbstractIframeEmbedPlayer):
 
         """
         uri = self.uris[0]
-        
+
         data = self.data.copy()
         wmode = data.pop('wmode', 0)
         if wmode:
-            # 'wmode' is subject to a lot of myths and half-true statements, 
+            # 'wmode' is subject to a lot of myths and half-true statements,
             # these are the best resources I could find:
             # http://stackoverflow.com/questions/886864/differences-between-using-wmode-transparent-opaque-or-window-for-an-embed
             # http://kb2.adobe.com/cps/127/tn_12701.html#main_Using_Window_Mode__wmode__values_
@@ -549,7 +549,7 @@ class YoutubePlayer(AbstractIframeEmbedPlayer):
         if bool(data.get('fs')):
             iframe_attrs.update(dict(
                 allowfullscreen='',
-                # non-standard attributes, required to enable YouTube's HTML5 
+                # non-standard attributes, required to enable YouTube's HTML5
                 # full-screen capabilities
                 mozallowfullscreen='',
                 webkitallowfullscreen='',
@@ -977,7 +977,7 @@ def preferred_player_for_media(media, **kwargs):
     return player_cls(media, playable_uris, **kwargs)
 
 
-def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
+def media_player(media, is_widescreen=False, show_player_brand=True, show_like=True, show_dislike=True,
                  show_download=False, show_embed=False, show_playerbar=True,
                  show_popout=True, show_resize=False, show_share=True,
                  js_init=None, **kwargs):
@@ -1014,6 +1014,7 @@ def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
         'uris': media.get_uris(),
         'is_widescreen': is_widescreen,
         'js_init': js_init,
+        'show_player_brand': show_player_brand,
         'show_like': show_like,
         'show_dislike': show_dislike,
         'show_download': show_download,
@@ -1077,10 +1078,30 @@ def embed_iframe(media, width=400, height=225, frameborder=0, **kwargs):
                   qualified=True)
     tag = Element('iframe', src=src, width=width, height=height,
                   frameborder=frameborder, **kwargs)
-    # some software is known not to work with self-closing iframe tags 
+    # some software is known not to work with self-closing iframe tags
     # ('<iframe ... />'). Several WordPress instances are affected as well as
     # TWiki http://opensource.mediacore.com/community/topic/embed-iframe-closing-tag
     tag.append('')
     return tag
 
+
 embed_player = embed_iframe
+
+
+def embed_featured(width=400, height=225, frameborder=0, **kwargs):
+    """Return an <iframe> tag that loads our universal player.
+
+    :type media: :class:`mediacore.model.media.Media`
+    :rtype: :class:`genshi.builder.Element`
+    :returns: An iframe element stream.
+
+    """
+    src = url_for(controller='/media', action='embed_featured',
+                  qualified=True)
+    tag = Element('iframe', src=src, width=width, height=height,
+                  frameborder=frameborder, **kwargs)
+    # some software is known not to work with self-closing iframe tags
+    # ('<iframe ... />'). Several WordPress instances are affected as well as
+    # TWiki http://opensource.mediacore.com/community/topic/embed-iframe-closing-tag
+    tag.append('')
+    return tag
