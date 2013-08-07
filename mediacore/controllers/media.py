@@ -26,12 +26,12 @@ from mediacore.lib import helpers
 from mediacore.lib.base import BaseController
 from mediacore.lib.decorators import expose, expose_xhr, observable, paginate, validate_xhr, autocommit
 from mediacore.lib.email import send_comment_notification
-from mediacore.lib.helpers import (filter_vulgarity, redirect, url_for, 
+from mediacore.lib.helpers import (filter_vulgarity, redirect, url_for,
     viewable_media)
 from mediacore.lib.i18n import _
 from mediacore.lib.services import Facebook
 from mediacore.lib.templating import render
-from mediacore.model import (DBSession, fetch_row, Media, MediaFile, Comment, 
+from mediacore.model import (DBSession, fetch_row, Media, MediaFile, Comment,
     Tag, Category, AuthorWithIP, Podcast)
 from mediacore.plugin import events
 
@@ -219,6 +219,29 @@ class MediaController(BaseController):
             comments = media.comments.published().all(),
             comment_form_action = url_for(action='comment'),
             comment_form_values = kwargs,
+        )
+
+    @expose('players/iframe_featured.html')
+    @observable(events.MediaController.embed_player)
+    def embed_featured(self, w=None, h=None, **kwargs):
+
+        popular = media.order_by(Media.popularity_points.desc())
+        latest = media.order_by(Media.publish_on.desc())
+
+        featured = None
+        featured_cat = helpers.get_featured_category()
+        if featured_cat:
+            featured = viewable_media(latest.in_category(featured_cat)).first()
+        if not featured:
+            featured = viewable_media(popular).first()
+
+        request.perm.assert_permission(u'view', featured.resource)
+
+        return dict(
+            featured = featured,
+            media = media,
+            width = w and int(w) or None,
+            height = h and int(h) or None,
         )
 
     @expose('players/iframe.html')
