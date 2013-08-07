@@ -215,6 +215,7 @@ class SettingsController(BaseSettingsController):
         accepted_extensions = ('.png', '.jpg', '.jpeg', '.gif')
         upload_field_filenames = [
             ('appearance_logo', 'logo'),
+            ('appearance_player_brand', 'player-logo'),
             ('appearance_background_image', 'bg_image'),
         ]
 
