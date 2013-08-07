@@ -15,6 +15,7 @@ See LICENSE.txt in the main project directory, for more information.
       py:with="download_uris = show_download and sorted((uri for uri in (h.download_uri(file) for file in media.files) if uri), key=lambda uri: uri.file.size);
                embed_code = show_embed and h.embed_iframe(media);
                show_like = settings['appearance_show_like'] and show_like;
+               show_player_brand = settings['appearance_show_player_brand'] and show_player_brand;
                show_dislike = settings['appearance_show_dislike'] and show_dislike;
                show_popout = settings['appearance_show_popout'] and show_popout;
                show_resize = settings['appearance_show_widescreen'] and show_resize;
@@ -67,6 +68,11 @@ See LICENSE.txt in the main project directory, for more information.
 						<li py:if="not show_like and not show_dislike" class="mcore-nav-left"><span class="mcore-nav-link"><span></span></span></li>
 					</py:otherwise>
 				</py:choose>
+                <li py:if="show_player_brand" class="f-rgt">
+          <a class="mcore-nav-link" py:with="current_url = h.url_for_media(media, qualified=True)" href="${current_url}">
+            <span class="mcore-btn-player-brand"></span><em />
+          </a>
+        </li>
 				<li py:if="show_popout" class="f-rgt mcore-nav-right"><a class="mcore-nav-link mcore-popout" href="${h.url_for(controller='/media', action='embed_player', slug=media.slug)}" title="Pop out a new player window"><span><span class="mcore-btn-popout">Pop Out</span></span><em /></a></li>
 				<li py:if="show_resize" class="f-rgt ${not show_popout and 'mcore-nav-right' or None}"><a class="mcore-nav-link mcore-resizer" href="#" title="${is_widescreen and _('Shrink') or _('Expand')}"><span><span class="mcore-btn-${is_widescreen and 'shrink' or 'expand'}">${is_widescreen and _('Shrink') or _('Expand')}</span></span><em /></a></li>
 				<li py:if="show_share" class="f-rgt ${not (show_popout or show_resize) and 'mcore-nav-right' or None}">
