@@ -83,6 +83,16 @@ class MediaController(BaseController):
             tag = fetch_row(Tag, slug=tag)
             media = media.filter(Media.tags.contains(tag))
 
+        if (request.settings['rss_display'] == 'True') and (not (q or tag)):
+            if show == 'latest':
+                response.feed_links.extend([
+                    (url_for(controller='/sitemaps', action='latest'), u'Latest RSS'),
+                ])
+            elif show == 'featured':
+                response.feed_links.extend([
+                    (url_for(controller='/sitemaps', action='featured'), u'Featured RSS'),
+                ])
+
         media = viewable_media(media)
         return dict(
             media = media,
