@@ -82,9 +82,12 @@ a.mcore-nav-link:visited,
 .mcore-playerbar .mcore-nav-right .mcore-nav-link > em {
 	background-image: url('../images/ui-kit/${navbar_color}/nav-player-edge-outer.png');
 }
-{% if player_brand %}\
-.mcore-btn-player-brand {
-    background: url('${player_brand}') no-repeat left;
+{% if appearance_player_brand %}\
+span.mcore-btn-player-brand {
+    background: url('${appearance_player_brand}') no-repeat center;
+    width: 193px;
+}
+a.mcore-nav-player-brand {
 }
 {% end %}
 .mcore-btn-like,

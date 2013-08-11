@@ -425,12 +425,10 @@ def generate_appearance_css(settings, cache_dir=None):
         vars['appearance_navigation_bar_color']]
     vars['navbar_color'] = vars['appearance_navigation_bar_color']
 
-    vars['player_brand'] = False
     if 'appearance_player_brand' in vars and len(vars['appearance_player_brand']) > 0:
         logo_path = os.path.join(appearance_dir, vars['appearance_player_brand'])
-        if os.path.exists(logo_path):
-            #vars['logo_height'] = Image.open(logo_path).size[1]
-            vars['player_brand'] = vars['appearance_player_brand']
+        if not os.path.exists(logo_path):
+            vars['appearance_player_brand'] = False
 
     if vars['appearance_logo']:
         logo_path = os.path.join(appearance_dir, vars['appearance_logo'])

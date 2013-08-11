@@ -317,11 +317,12 @@ class AppearanceForm(ListForm):
                     default=lambda: request.settings.get('appearance_background_image', \
                                                              'bg_image.png'),
                     template='./admin/settings/appearance_input_field.html'),
-                FileField('appearance_player_brand', label_text=N_('Player toolbar Image'),
-                    validator=FieldStorageUploadConverter(not_empty=False,
-                        label_text=N_('Upload a little icon for the player toolbar')),
-                    css_classes=[],
-                    default=lambda: request.settings.get('appearance_player_brand', \
+                FileField('appearance_player_brand',
+                        label_text=N_('Player toolbar Image'),
+                        validator=FieldStorageUploadConverter(not_empty=False,
+                            label_text=N_('Upload a little icon for the player toolbar')),
+                        css_classes=[],
+                        default=lambda: request.settings.get('appearance_player_brand', \
                                                              None),
                     template='./admin/settings/appearance_input_field.html'),
                 TextField('appearance_background_color', maxlength=255,
@@ -407,10 +408,6 @@ class AppearanceForm(ListForm):
                 CheckBox('appearance_show_embed',
                     css_classes=['checkbox-left'],
                     label_text=N_('Enable Embed button on player menu bar.'),
-                    validator=Bool(if_missing='')),
-                CheckBox('appearance_show_player_brand',
-                    css_classes=['checkbox-left'],
-                    label_text=N_('Enable Logo on player menu bar.'),
                     validator=Bool(if_missing='')),
                 CheckBox('appearance_show_widescreen',
                     css_classes=['checkbox-left'],
