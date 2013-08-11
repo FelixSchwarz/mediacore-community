@@ -231,28 +231,6 @@ class MediaController(BaseController):
             comment_form_values = kwargs,
         )
 
-    @expose('players/iframe_featured.html')
-    @observable(events.MediaController.embed_player)
-    def embed_featured(self, w=None, h=None, **kwargs):
-
-        media = Media.query.published()
-        latest = media.order_by(Media.publish_on.desc())
-
-        featured = None
-        featured_cat = helpers.get_featured_category()
-        if featured_cat:
-            featured = latest.in_category(featured_cat).first()
-        if not featured:
-            featured = media.order_by(Media.popularity_points.desc()).first()
-
-        request.perm.assert_permission(u'view', featured.resource)
-
-        return dict(
-            featured = featured,
-            width = w and int(w) or None,
-            height = h and int(h) or None,
-        )
-
     @expose('players/iframe.html')
     @observable(events.MediaController.embed_player)
     def embed_player(self, slug, w=None, h=None, **kwargs):
