@@ -16,7 +16,7 @@ See LICENSE.txt in the main project directory, for more information.
 <xi:include py:for="tmpl in value_of('plugin_templates', ())" href="${tmpl}" />
 
 <head>
-	<title>${h.page_title(default=media.title, media=media)}</title>
+	<title>${h.page_title(default=featured.title, media=featured)}</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<py:choose test="h.config['debug'] and bool(h.request.params.get('debug', False))">
 		<py:when test="True">

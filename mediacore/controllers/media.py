@@ -235,21 +235,20 @@ class MediaController(BaseController):
     @observable(events.MediaController.embed_player)
     def embed_featured(self, w=None, h=None, **kwargs):
 
-        popular = media.order_by(Media.popularity_points.desc())
+        media = Media.query.published()
         latest = media.order_by(Media.publish_on.desc())
 
         featured = None
         featured_cat = helpers.get_featured_category()
         if featured_cat:
-            featured = viewable_media(latest.in_category(featured_cat)).first()
+            featured = latest.in_category(featured_cat).first()
         if not featured:
-            featured = viewable_media(popular).first()
+            featured = media.order_by(Media.popularity_points.desc()).first()
 
         request.perm.assert_permission(u'view', featured.resource)
 
         return dict(
             featured = featured,
-            media = media,
             width = w and int(w) or None,
             height = h and int(h) or None,
         )

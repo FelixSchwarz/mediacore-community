@@ -35,6 +35,7 @@ def make_map(config, controller_scan=controller_scan):
     # Media list and non-specific actions
     # These are all mapped without any prefix to indicate the controller
     map.connect('/', controller='media', action='explore')
+    map.connect('/embed_featured', controller='embed_featured', action='index')
     map.connect('/media', controller='media', action='index')
     map.connect('/random', controller='media', action='random')
 
@@ -156,7 +157,7 @@ def make_map(config, controller_scan=controller_scan):
         controller='admin/users',
         action='edit',
         requirements={'id': r'(\d+|new)'})
-    
+
     map.connect('/admin/groups',
         controller='admin/groups',
         action='index')
