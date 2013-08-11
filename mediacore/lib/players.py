@@ -708,7 +708,7 @@ class HTML5PlusFlowPlayer(AbstractHTML5Player):
     """An optional default data dictionary for user preferences."""
 
     supported_containers = HTML5Player.supported_containers \
-                         | FlowPlayer.supported_containers
+            | FlowPlayer.supported_containers
     supported_schemes = HTML5Player.supported_schemes \
                       | FlowPlayer.supported_schemes
 
@@ -1096,7 +1096,7 @@ def embed_featured(width=400, height=225, frameborder=0, **kwargs):
     :returns: An iframe element stream.
 
     """
-    src = url_for(controller='/media', action='embed_featured',
+    src = url_for(controller='/embed_featured', action='index',
                   qualified=True)
     tag = Element('iframe', src=src, width=width, height=height,
                   frameborder=frameborder, **kwargs)
