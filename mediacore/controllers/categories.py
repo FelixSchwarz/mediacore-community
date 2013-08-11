@@ -10,10 +10,11 @@ from pylons.controllers.util import abort
 from sqlalchemy import orm
 
 from mediacore.lib.base import BaseController
-from mediacore.lib.decorators import (beaker_cache, expose, observable, 
+from mediacore.lib.decorators import (beaker_cache, expose, observable,
     paginate, validate)
 from mediacore.model import Category, Media, fetch_row, Tag
 from mediacore.lib.helpers import content_type_for_response, url_for, viewable_media
+from mediacore.lib.i18n import gettext as _
 from mediacore.plugin import events
 from mediacore.validation import LimitFeedItemsValidator
 
@@ -60,7 +61,7 @@ class CategoriesController(BaseController):
 
         if c.category:
             media = media.in_category(c.category)
-            
+
             response.feed_links.append((
                 url_for(controller='/categories', action='feed', slug=c.category.slug),
                 _('Latest media in %s') % c.category.name
