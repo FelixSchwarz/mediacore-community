@@ -90,8 +90,6 @@ span.mcore-btn-player-brand {
 .mcore-nav-link:hover > span.mcore-btn-player-brand {
   background-position: center;
 }
-a.mcore-nav-player-brand {
-}
 {% end %}
 .mcore-btn-like,
 .mcore-btn-dislike,
