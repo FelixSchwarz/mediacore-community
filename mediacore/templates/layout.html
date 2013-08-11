@@ -38,6 +38,22 @@ See LICENSE.txt in the main project directory, for more information.
 		<div py:if="settings['appearance_display_mediacore_credits']" id="mcore-credits" class="f-rgt">
 			<a href="http://mediacorecommunity.org" class="mcore-foot-link underline-hover" i18n:msg=""><strong>MediaCore</strong> <em>video platform</em></a>
 		</div>
+    <div class="f-rgt" id="mcore-embed-featured" py:if="settings['appearance_show_embed']" py:with="embed_featured = settings['appearance_show_embed'] and h.embed_featured();">
+      <ul>
+        <li class="mcore-nav-left mcore-nav-right">
+          <a class="mcore-nav-link" href="#" title="Embed">
+              <span>Embed the latest featured video on your website</span><em />
+          </a>
+          <div id="embedthis-hover" class="meta-hover-embed">
+            <div class="meta-hover-top"></div>
+            <div class="meta-hover-content">
+              <label>Embeddable Player HTML: <input type="text" value="${unicode(embed_featured)}" readonly="readonly" /></label>
+            </div>
+            <div class="meta-hover-bottom"></div>
+          </div>
+        </li>
+      </ul>
+    </div>
 	</div>
 
 	${Markup(settings['appearance_custom_footer_html'])}
@@ -48,6 +64,7 @@ See LICENSE.txt in the main project directory, for more information.
         mediacore.ie6update = mediacore.ie6update || {};
         mediacore.ie6update.scripts = "${h.url_for('/scripts/third-party/ie6update')}";
         mediacore.ie6update.images = "${h.url_for('/images/third-party/ie6update/')}";
+        mcore.initFooter();
     </script>
 	<!--[if IE 6]>
 		<script type="text/javascript">

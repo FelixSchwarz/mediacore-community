@@ -117,6 +117,9 @@ a:hover {
 #mcore-feeds .mcore-foot-link {
 	margin-right: 5px;
 }
+#mcore-embed-featured {
+  margin: 5px;
+}
 #mcore-credits,
 #mcore-feeds {
 	margin: 13px 15px;
@@ -819,6 +822,14 @@ a:focus .grid-title {
 	cursor: pointer;
 }
 
+.meta-hover-embed {
+	visibility: hidden;
+	position: relative;
+	width: 193px;
+	left: 50%;
+	margin-left: -91px;
+	z-index: 1;
+}
 .meta-hover {
 	visibility: hidden;
 	position: absolute;
