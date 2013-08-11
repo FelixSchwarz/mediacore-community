@@ -13,12 +13,17 @@ See LICENSE.txt in the main project directory, for more information.
       xmlns:i18n="http://genshi.edgewall.org/i18n"
       xmlns:xi="http://www.w3.org/2001/XInclude">
 
+<!--! wrap the core MediaCore output in a layout -->
+<xi:include href="../helpers.html" />
 <xi:include py:for="tmpl in value_of('plugin_templates', ())" href="${tmpl}" />
 
 <head>
-	<title>${h.page_title(default=featured.title, media=featured)}</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	<py:choose test="h.config['debug'] and bool(h.request.params.get('debug', False))">
+	<meta name="language" content="${translator.locale.territory and '%s-%s' % (translator.locale.language, translator.locale.territory.lower()) or translator.locale.language}" />
+	<link href="${h.url_for('/styles/base.css')}" media="screen" rel="stylesheet" type="text/css" />
+	${Markup(h.response.stylesheets.render())}
+	<link href="${h.url_for('/appearance/appearance.css')}" media="screen" rel="stylesheet" type="text/css" />
+	<py:choose test="bool(h.request.params.get('debug', False))">
 		<py:when test="True">
 			<script type="text/javascript" src="${h.url_for('/scripts/goog/base.js')}"></script>
 			<script type="text/javascript" src="${h.url_for('/scripts/mcore/deps.js')}"></script>
@@ -27,6 +32,21 @@ See LICENSE.txt in the main project directory, for more information.
 		<script py:otherwise="" type="text/javascript" src="${h.url_for('/scripts/mcore-compiled.js')}"></script>
 	</py:choose>
 	${Markup(h.response.scripts.render())}
+	
+	<py:for each="url, title in response.feed_links">
+		<link type="application/rss+xml" rel="alternate" href="${url}" title="${title}" />
+	</py:for>
+	<title>${h.page_title(default=media.title, media=media)}</title>
+	<link py:if="media.podcast" href="${h.url_for('/styles/podcasts.css')}" media="screen" rel="stylesheet" type="text/css" />
+	<meta name="description" content="${h.meta_description(media=media)}" />
+	<meta name="keywords" content="${h.meta_keywords(media=media)}" />
+
+	<meta property="og:title" content="${h.page_title(default=media.title, media=media)}"/>
+	<meta property="og:url" content="${h.url_for_media(media, qualified=True)}"/>
+	<meta property="og:description" content="${h.meta_description(media=media)}"/>
+	<meta property="og:site_name" content="${h.page_title()}"/>
+	<meta property="og:image" content="${h.thumb_url(media, 'l', qualified=True)}"/>
+	<link rel="image_src" href="${h.thumb_url(media, 'l', qualified=True)}" />
 	<script py:if="settings.get('google_analytics_uacct', None)" type="text/javascript">
 		var _gaq = _gaq || [];
 		_gaq.push(['_setAccount', '${settings['google_analytics_uacct']}']);
@@ -37,17 +57,20 @@ See LICENSE.txt in the main project directory, for more information.
 			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
 		})();
 	</script>
-	<style type="text/css">
-		embed, object, iframe, audio, video {display: block}
-		body {background: #000; margin: 0; padding: 0; overflow: hidden}
-	</style>
+	<py:if test="settings['appearance_custom_head_tags']">
+		${Markup(settings['appearance_custom_head_tags'])}
+	</py:if>
 </head>
 
-<body>
-	${h.media_player(featured, width=width, height=height, show_playerbar=True, js_init='function(ctrlr){ ctrlr.setFillScreen(true); }')}
-	<script type="text/javascript">
-		mcore.initPage();
-	</script>
+<body class="mcore-body">
+		<div id="media-box" class="feat-box" style="margin: 0px">
+			<div class="feat-content" style="height:100%; width:100%; padding: 0px">
+				${h.media_player(media, show_download=False, show_embed=True, is_widescreen=False, width=width, height=height, show_playerbar=True, js_init='function(ctrlr){ ctrlr.setFillScreen(true); }')}
+			</div>
+		</div>
+    <script type="text/javascript">
+      mcore.initPage();
+    </script>
 </body>
 
 </html>
