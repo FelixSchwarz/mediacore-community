@@ -55,5 +55,17 @@ mcore.initPage = function() {
   mcore.players.Controller.pageLoaded();
 };
 
+mcore.initFooter = function() {
+  var extras = goog.dom.getElementsByClass('meta-hover-embed');
+  var popups = goog.array.map(extras, function(elem) {
+    var popupButton = goog.dom.getPreviousElementSibling(elem);
+    var popup = new mcore.popups.SimplePopup(elem);
+    popup.setVisible(false);
+    popup.attach(popupButton);
+    return popup;
+  });
+};
+
 
 goog.exportSymbol('mcore.initPage', mcore.initPage);
+goog.exportSymbol('mcore.initFooter', mcore.initFooter);
