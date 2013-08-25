@@ -822,21 +822,14 @@ a:focus .grid-title {
 	cursor: pointer;
 }
 
-.meta-hover-embed {
-	visibility: hidden;
-	position: relative;
-	width: 193px;
-	left: 50%;
-	margin-left: -91px;
-	z-index: 1;
-}
 .meta-hover {
 	visibility: hidden;
-	position: absolute;
+  float: left;
+	/*position: absolute;
 	width: 193px;
 	top: 33px;
 	left: 50%;
-	margin-left: -91px;
+	margin-left: -91px;*/
 	z-index: 1;
 }
 .meta-hover-top,
@@ -883,27 +876,37 @@ a:focus .grid-title {
 	display: block;
 	margin-left: -1px;
 }
-ul.meta-hover-bottom {
-	list-style: none;
-	background: url('../images/layout/meta-hover-share.png') no-repeat;
-	height: 39px;
+div.meta-share-button {
+	height: 37px;
 	margin: 0;
+  float: left;
 }
 #downloadthis .meta-hover {
 	left: -50px;
 }
-#sharethis-hover li a {
+#show-share a {
 	text-indent: -5000px;
 	width: 59px;
-	height: 29px;
+	height: 37px;
 	margin-top: 1px;
 	display: block;
 	float: left;
 }
-#sharethis-hover input { margin-bottom: 10px }
-#sharethis-hover .share-email a { margin-left: 6px }
-#sharethis-hover .share-facebook a { width: 66px }
-
+#show-share input { 
+  margin-bottom: 10px;
+  float: left;
+}
+a.share-email { 
+  margin-left: 6px; 
+	background: url('../images/layout/share-email.png') no-repeat;
+}
+a.share-facebook { 
+  width: 66px;
+	background: url('../images/layout/share-facebook.png') no-repeat;
+}
+a.share-twitter {
+	background: url('../images/layout/share-twitter.png') no-repeat;
+}
 /* Forms */
 textarea {
 	resize: vertical;

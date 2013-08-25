@@ -71,18 +71,14 @@ See LICENSE.txt in the main project directory, for more information.
 				<li py:if="show_popout" class="f-rgt mcore-nav-right"><a class="mcore-nav-link mcore-popout" href="${h.url_for(controller='/media', action='embed_player', slug=media.slug)}" title="Pop out a new player window"><span><span class="mcore-btn-popout">Pop Out</span></span><em /></a></li>
 				<li py:if="show_resize" class="f-rgt ${not show_popout and 'mcore-nav-right' or None}"><a class="mcore-nav-link mcore-resizer" href="#" title="${is_widescreen and _('Shrink') or _('Expand')}"><span><span class="mcore-btn-${is_widescreen and 'shrink' or 'expand'}">${is_widescreen and _('Shrink') or _('Expand')}</span></span><em /></a></li>
 				<li py:if="show_share" class="f-rgt ${not (show_popout or show_resize) and 'mcore-nav-right' or None}">
-					<a class="mcore-nav-link" href="#" title="Share"><span>Share</span><em /></a>
-					<div id="sharethis-hover" class="meta-hover" py:with="current_url = h.url_for_media(media, qualified=True)">
-						<div class="meta-hover-top"></div>
-						<div class="meta-hover-content">
-							<label>Permalink: <input type="text" value="${current_url}" readonly="readonly" /></label>
-						</div>
-						<ul class="meta-hover-bottom">
-							<li class="share-email"><a title="Share by email" href="mailto:?subject=${media.title}&amp;body=${current_url}">Share by Email</a></li>
-							<li class="share-facebook"><a title="Share on Facebook" href="http://www.facebook.com/sharer/sharer.php?u=${current_url}">Share on Facebook</a></li>
-							<li class="share-twitter"><a title="Share on Twitter" href="http://twitter.com/home?status=${media.title + ': ' + current_url}">Share on Twitter</a></li>
-						</ul>
-					</div>
+          <div py:if="show_share" id="show-share" class="meta-hover" py:with="current_url = h.url_for_media(media, qualified=True)">
+              <div class="meta-share-button">
+              <a class="share-email" title="Share by email" href="mailto:?subject=${media.title}&amp;body=${current_url}">Share by Email</a>
+              <a class="share-facebook" title="Share on Facebook" href="http://www.facebook.com/sharer/sharer.php?u=${current_url}">Share on Facebook</a>
+              <a class="share-twitter" title="Share on Twitter" href="http://twitter.com/home?status=${media.title + ': ' + current_url}">Share on Twitter</a>
+              </div>
+          </div>
+					<a class="mcore-nav-link show-share" href="#" title="Share"><span>Share</span><em /></a>
 				</li>
 				<li py:if="show_embed" class="f-rgt ${not (show_popout or show_resize or show_share) and 'mcore-nav-right' or None}">
 					<a class="mcore-nav-link" href="#" title="Embed"><span>Embed</span><em /></a>

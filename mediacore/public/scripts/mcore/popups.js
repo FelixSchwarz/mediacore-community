@@ -31,8 +31,10 @@ goog.require('goog.ui.PopupBase');
  */
 mcore.popups.SimplePopup = function(opt_element) {
   goog.base(this, opt_element);
-  this.setHideOnEscape(true);
-  this.setAutoHide(true);
+  this.setHideOnEscape(false);
+  this.setAutoHide(false);
+  var element = this.getElement();
+  element.style.setProperty("width", "0px");
 };
 goog.inherits(mcore.popups.SimplePopup, goog.ui.PopupBase);
 
@@ -64,6 +66,9 @@ mcore.popups.SimplePopup.prototype.attach = function(element) {
 mcore.popups.SimplePopup.prototype.handleClick = function(e) {
   e.preventDefault();
   this.setVisible(!this.isOrWasRecentlyVisible());
+  var element = this.getElement();
+  this.isOrWasRecentlyVisible() ? element.style.setProperty("width", "200px") : element.style.setProperty("width", "0px");
+  this.anchor.style.setProperty("visibility", this.isOrWasRecentlyVisible() ? "hidden" : "visible");
 };
 
 
