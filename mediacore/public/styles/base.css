@@ -822,15 +822,19 @@ a:focus .grid-title {
 	cursor: pointer;
 }
 
-.meta-hover {
+.meta-popin {
 	visibility: hidden;
   float: left;
-	/*position: absolute;
-	width: 193px;
-	top: 33px;
-	left: 50%;
-	margin-left: -91px;*/
 	z-index: 1;
+}
+.meta-hover {
+  visibility: hidden;
+  position: absolute;
+  width: 193px;
+  top: 33px;
+  left: 50%;
+  margin-left: -91px;
+  z-index: 1;
 }
 .meta-hover-top,
 .meta-hover-bottom {
@@ -853,10 +857,19 @@ a:focus .grid-title {
 	font-weight: bold;
 }
 .meta-hover input {
-	margin-top: 7px;
-	margin-bottom: -1px;
+  margin-top: 7px;
+  margin-bottom: -1px;
+  padding: 5px;
+  width: 151px;
+  border: 1px solid #c6c6c6;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+.meta-popin input {
+	margin-top: 4px;
+	margin-left: 5px;
 	padding: 5px;
-	width: 151px;
+	width: 141px;
 	border: 1px solid #c6c6c6;
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
@@ -881,6 +894,12 @@ div.meta-share-button {
 	margin: 0;
   float: left;
 }
+ul.meta-hover-bottom {
+  list-style: none;
+  background: url('../images/layout/meta-hover-share.png') no-repeat;
+  height: 39px;
+  margin: 0;
+}
 #downloadthis .meta-hover {
 	left: -50px;
 }
@@ -896,6 +915,18 @@ div.meta-share-button {
   margin-bottom: 10px;
   float: left;
 }
+#sharethis-hover li a {
+  text-indent: -5000px;
+  width: 59px;
+  height: 29px;
+  margin-top: 1px;
+  display: block;
+  float: left;
+}
+#sharethis-hover input { margin-bottom: 10px }
+#sharethis-hover .share-email a { margin-left: 6px }
+#sharethis-hover .share-facebook a { width: 66px }
+
 a.share-email { 
   margin-left: 6px; 
 	background: url('../images/layout/share-email.png') no-repeat;

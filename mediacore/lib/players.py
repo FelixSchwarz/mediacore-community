@@ -1025,6 +1025,55 @@ def media_player(media, is_widescreen=False, show_player_brand=True, show_like=T
         'show_share': show_share,
     })
 
+
+def embedded_media_player(media, is_widescreen=False, show_player_brand=True, show_like=True, show_dislike=True,
+                 show_download=False, show_embed=False, show_playerbar=True,
+                 show_popout=True, show_resize=False, show_share=True,
+                 js_init=None, **kwargs):
+    """Instantiate and render the preferred player that can play this media.
+
+    We make no effort to pick the "best" player here, we simply return
+    the first player that *can* play any of the URIs associated with
+    the given media object. It's up to the user to declare their own
+    preferences wisely.
+
+    Player preferences are fetched from the database and the
+    :attr:`mediacore.model.players.c.data` dict is passed as kwargs to
+    :meth:`AbstractPlayer.__init__`.
+
+    :type media: :class:`mediacore.model.media.Media`
+    :param media: A media instance to play.
+
+    :param js_init: Optional function to call after the javascript player
+        controller has been instantiated. Example of a function literal:
+        ``function(controller){ controller.setFillScreen(true); }``.
+        Any function reference can be used as long as it is defined
+        in all pages and accepts the JS player controller as its first
+        and only argument.
+
+    :param \*\*kwargs: Extra kwargs for :meth:`AbstractPlayer.__init__`.
+
+    :rtype: `str` or `None`
+    :returns: A rendered player.
+    """
+    player = preferred_player_for_media(media, **kwargs)
+    return render('players/embedded_html5_or_flash.html', {
+        'player': player,
+        'media': media,
+        'uris': media.get_uris(),
+        'is_widescreen': is_widescreen,
+        'js_init': js_init,
+        'show_player_brand': show_player_brand,
+        'show_like': show_like,
+        'show_dislike': show_dislike,
+        'show_download': show_download,
+        'show_embed': show_embed,
+        'show_playerbar': show_playerbar,
+        'show_popout': show_popout,
+        'show_resize': show_resize and (player and player.supports_resizing),
+        'show_share': show_share,
+    })
+
 def pick_podcast_media_file(media):
     """Return a file playable in the most podcasting client: iTunes.
 

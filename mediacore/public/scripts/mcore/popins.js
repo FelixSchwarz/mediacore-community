@@ -6,8 +6,7 @@
  * See LICENSE.txt in the main project directory, for more information.
  **/
 
-goog.provide('mcore.popups');
-goog.provide('mcore.popups.SimplePopup');
+goog.provide('mcore.popups.SimplePopin');
 
 goog.require('goog.dom');
 goog.require('goog.dom.TagName');
@@ -29,12 +28,14 @@ goog.require('goog.ui.PopupBase');
  * @constructor
  * @extends {goog.ui.PopupBase}
  */
-mcore.popups.SimplePopup = function(opt_element) {
+mcore.popups.SimplePopin = function(opt_element) {
   goog.base(this, opt_element);
-  this.setHideOnEscape(true);
-  this.setAutoHide(true);
+  this.setHideOnEscape(false);
+  this.setAutoHide(false);
+  var element = this.getElement();
+  element.style.setProperty("width", "0px");
 };
-goog.inherits(mcore.popups.SimplePopup, goog.ui.PopupBase);
+goog.inherits(mcore.popups.SimplePopin, goog.ui.PopupBase);
 
 
 /**
@@ -42,14 +43,14 @@ goog.inherits(mcore.popups.SimplePopup, goog.ui.PopupBase);
  * @type {?Element}
  * @protected
  */
-mcore.popups.SimplePopup.prototype.anchor = null;
+mcore.popups.SimplePopin.prototype.anchor = null;
 
 
 /**
  * Attach the popup to an element which, when clicked, will toggle the popup.
  * @param {Element|string} element A toggle button.
  */
-mcore.popups.SimplePopup.prototype.attach = function(element) {
+mcore.popups.SimplePopin.prototype.attach = function(element) {
   this.anchor = goog.dom.getElement(element);
   goog.events.listen(this.anchor, goog.events.EventType.CLICK,
                      this.handleClick, false, this);
@@ -61,9 +62,12 @@ mcore.popups.SimplePopup.prototype.attach = function(element) {
  * @param {!goog.events.Event} e Click event.
  * @protected
  */
-mcore.popups.SimplePopup.prototype.handleClick = function(e) {
+mcore.popups.SimplePopin.prototype.handleClick = function(e) {
   e.preventDefault();
   this.setVisible(!this.isOrWasRecentlyVisible());
+  var element = this.getElement();
+  this.isOrWasRecentlyVisible() ? element.style.setProperty("width", "160px") : element.style.setProperty("width", "0px");
+  this.anchor.style.setProperty("visibility", this.isOrWasRecentlyVisible() ? "hidden" : "visible");
 };
 
 
@@ -73,7 +77,7 @@ mcore.popups.SimplePopup.prototype.handleClick = function(e) {
  * @protected
  * @suppress {underscore}
  */
-mcore.popups.SimplePopup.prototype.onShow_ = function() {
+mcore.popups.SimplePopin.prototype.onShow_ = function() {
   goog.base(this, 'onShow_');
 
   var element = this.getElement();
@@ -95,7 +99,7 @@ mcore.popups.SimplePopup.prototype.onShow_ = function() {
 
 
 /** @inheritDoc */
-mcore.popups.SimplePopup.prototype.disposeInternal = function() {
+mcore.popups.SimplePopin.prototype.disposeInternal = function() {
   goog.base(this, 'disposeInternal');
   goog.events.unlisten(this.anchor, goog.events.EventType.CLICK,
                        this.handleClick, false, this);

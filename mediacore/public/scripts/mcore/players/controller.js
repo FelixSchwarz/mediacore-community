@@ -21,6 +21,7 @@ goog.require('mcore.players.ColumnViewResizer');
 goog.require('mcore.players.Rater');
 goog.require('mcore.players.WideViewResizer');
 goog.require('mcore.popups.SimplePopup');
+goog.require('mcore.popups.SimplePopin');
 
 
 
@@ -106,6 +107,14 @@ mcore.players.Controller.prototype.popups_;
 
 
 /**
+ * Popin instances for download, embed, share, etc.
+ * @type {Array.<mcore.popups.SimplePopin>|undefined}
+ * @private
+ */
+mcore.players.Controller.prototype.popins_;
+
+
+/**
  * The handler for expanding and shrinking the player on the page.
  * @type {mcore.players.ResizerBase|undefined}
  * @private
@@ -155,6 +164,7 @@ mcore.players.Controller.prototype.decorateInternal = function(element) {
   var box = this.dom_.getElementsByClass('mcore-playerbox', element)[0];
   var bar = this.dom_.getElementsByClass('mcore-playerbar', element)[0];
   var extras = this.dom_.getElementsByClass('meta-hover', bar);
+  var popins = this.dom_.getElementsByClass('meta-popin', bar);
   var popout = this.dom_.getElementsByClass('mcore-popout', bar)[0];
   this.resizerBtn_ = this.dom_.getElementsByClass('mcore-resizer', bar)[0];
   this.likeBtn_ = this.dom_.getElementsByClass('mcore-like', bar)[0];
@@ -164,6 +174,7 @@ mcore.players.Controller.prototype.decorateInternal = function(element) {
   this.player_.decorate(box);
 
   this.popups_ = goog.array.map(extras, this.decorateInternalPopup, this);
+  this.popins_ = goog.array.map(popins, this.decorateInternalPopin, this);
 
   if (this.resizerBtn_) {
     if (this.getResizer()) {
@@ -214,19 +225,32 @@ mcore.players.Controller.prototype.enterDocument = function() {
 
 
 /**
+ * Decorate popin elements with a popin handler.
+ * @param {Element} elem Popin content.
+ * @return {mcore.popups.SimplePopin} A popin instance.
+ * @protected
+ */
+mcore.players.Controller.prototype.decorateInternalPopin = function(elem) {
+  var popupButton = this.dom_.getElementByClass(elem.id);
+  var popup = new mcore.popups.SimplePopin(elem);
+  popup.setVisible(false);
+  popup.attach(popupButton);
+  return popup;
+};
+
+/**
  * Decorate popup elements with a popup handler.
  * @param {Element} elem Popup content.
  * @return {mcore.popups.SimplePopup} A popup instance.
  * @protected
  */
 mcore.players.Controller.prototype.decorateInternalPopup = function(elem) {
-  var popupButton = this.dom_.getElementByClass(elem.id);
+  var popupButton = this.dom_.getPreviousElementSibling(elem);
   var popup = new mcore.popups.SimplePopup(elem);
   popup.setVisible(false);
   popup.attach(popupButton);
   return popup;
 };
-
 
 /**
  * Open a slimmed down window that contains just the player.
@@ -461,9 +485,14 @@ mcore.players.Controller.prototype.disposeInternal = function() {
     this.popups_[i].dispose();
     delete this.popups_[i];
   }
+  for (var i = 0; i < this.popins_.length; ++i) {
+    this.popins_[i].dispose();
+    delete this.popins_[i];
+  }
   goog.dispose(this.resizer_);
   goog.dispose(this.rater_);
   this.popups_ = undefined;
+  this.popins_ = undefined;
   this.resizer_ = undefined;
   this.resizerBtn_ = undefined;
   delete this.player_;

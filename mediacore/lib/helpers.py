@@ -31,7 +31,7 @@ from mediacore.lib.compat import any, md5
 from mediacore.lib.i18n import (N_, _, format_date, format_datetime,
     format_decimal, format_time)
 from mediacore.lib.players import (embed_player, embed_iframe, embed_featured, media_player,
-    pick_any_media_file, pick_podcast_media_file)
+                                   embedded_media_player, pick_any_media_file, pick_podcast_media_file)
 from mediacore.lib.thumbnails import thumb, thumb_url
 from mediacore.lib.uri import (best_link_uri, download_uri, file_path,
     pick_uri, pick_uris, web_uri)

@@ -15,13 +15,11 @@ See LICENSE.txt in the main project directory, for more information.
       py:with="download_uris = show_download and sorted((uri for uri in (h.download_uri(file) for file in media.files) if uri), key=lambda uri: uri.file.size);
                embed_code = show_embed and h.embed_iframe(media);
                show_like = settings['appearance_show_like'] and show_like;
+               show_player_brand = settings['appearance_player_brand'] and show_player_brand;
                show_dislike = settings['appearance_show_dislike'] and show_dislike;
-               show_popout = settings['appearance_show_popout'] and show_popout;
-               show_resize = settings['appearance_show_widescreen'] and show_resize;
                show_share = settings['appearance_show_share'] and show_share;
                show_embed = settings['appearance_show_embed'] and show_embed and embed_code;
-               show_download = settings['appearance_show_download'] and show_download and download_uris;
-               show_playerbar = show_playerbar and (show_like or show_dislike or show_popout or show_resize or show_share or show_embed or show_download);">
+               show_playerbar = show_playerbar and (show_like or show_dislike or show_share or show_embed);">
 
 	<xi:include py:for="tmpl in value_of('plugin_templates', ())" href="${tmpl}" />
 
@@ -67,46 +65,26 @@ See LICENSE.txt in the main project directory, for more information.
 						<li py:if="not show_like and not show_dislike" class="mcore-nav-left"><span class="mcore-nav-link"><span></span></span></li>
 					</py:otherwise>
 				</py:choose>
-				<li py:if="show_popout" class="f-rgt mcore-nav-right"><a class="mcore-nav-link mcore-popout" href="${h.url_for(controller='/media', action='embed_player', slug=media.slug)}" title="Pop out a new player window"><span><span class="mcore-btn-popout">Pop Out</span></span><em /></a></li>
-				<li py:if="show_resize" class="f-rgt ${not show_popout and 'mcore-nav-right' or None}"><a class="mcore-nav-link mcore-resizer" href="#" title="${is_widescreen and _('Shrink') or _('Expand')}"><span><span class="mcore-btn-${is_widescreen and 'shrink' or 'expand'}">${is_widescreen and _('Shrink') or _('Expand')}</span></span><em /></a></li>
-				<li py:if="show_share" class="f-rgt ${not (show_popout or show_resize) and 'mcore-nav-right' or None}">
-					<a class="mcore-nav-link" href="#" title="Share"><span>Share</span><em /></a>
-					<div id="sharethis-hover" class="meta-hover" py:with="current_url = h.url_for_media(media, qualified=True)">
-						<div class="meta-hover-top"></div>
-						<div class="meta-hover-content">
-							<label>Permalink: <input type="text" value="${current_url}" readonly="readonly" /></label>
-						</div>
-						<ul class="meta-hover-bottom">
-							<li class="share-email"><a title="Share by email" href="mailto:?subject=${media.title}&amp;body=${current_url}">Share by Email</a></li>
-							<li class="share-facebook"><a title="Share on Facebook" href="http://www.facebook.com/sharer/sharer.php?u=${current_url}">Share on Facebook</a></li>
-							<li class="share-twitter"><a title="Share on Twitter" href="http://twitter.com/home?status=${media.title + ': ' + current_url}">Share on Twitter</a></li>
-						</ul>
-					</div>
+				<li py:if="show_share" class="f-rgt 'mcore-nav-right'">
+          <div id="show-share" class="mcore-nav-link" py:with="current_url = h.url_for_media(media, qualified=True)">
+              <div class="meta-share-button">
+              <a class="share-email" title="Share by email" href="mailto:?subject=${media.title}&amp;body=${current_url}">Share by Email</a>
+              <a class="share-facebook" title="Share on Facebook" href="http://www.facebook.com/sharer/sharer.php?u=${current_url}">Share on Facebook</a>
+              <a class="share-twitter" title="Share on Twitter" href="http://twitter.com/home?status=${media.title + ': ' + current_url}">Share on Twitter</a>
+              </div>
+          </div>
 				</li>
-				<li py:if="show_embed" class="f-rgt ${not (show_popout or show_resize or show_share) and 'mcore-nav-right' or None}">
-					<a class="mcore-nav-link" href="#" title="Embed"><span>Embed</span><em /></a>
-					<div id="embedthis-hover" class="meta-hover">
-						<div class="meta-hover-top"></div>
-						<div class="meta-hover-content">
-							<label>Embeddable Player HTML: <input type="text" value="${unicode(embed_code)}" readonly="readonly" /></label>
-						</div>
-						<div class="meta-hover-bottom"></div>
+				<li py:if="show_embed" class="f-rgt ${not show_share and 'mcore-nav-right' or None}">
+					<div id="embedthis-hover" class="meta-popin mcore-nav-link">
+							<input type="text" value="${unicode(embed_code)}" readonly="readonly" />
 					</div>
+					<a class="mcore-nav-link embedthis-hover" href="#" title="Embed"><span>Embed</span><em /></a>
 				</li>
-				<li py:if="show_download" class="f-rgt ${not (show_popout or show_resize or show_share or show_embed) and 'mcore-nav-right' or None}">
-					<a class="mcore-nav-link" href="${download_uris[0]}" title="Download"><span>Download</span><em /></a>
-					<div py:if="len(download_uris) > 1" class="meta-hover">
-						<div class="meta-hover-top"></div>
-						<div class="meta-hover-content">
-							<ul>
-								<li py:for="uri in download_uris">
-									<a href="${uri}" class="underline-hover">${uri.file.display_name}</a>
-								</li>
-							</ul>
-						</div>
-						<div class="meta-hover-bottom"></div>
-					</div>
-				</li>
+        <li py:if="show_player_brand" class="f-rgt ${not (show_share or show_embed) and 'mcore-nav-right' or None}">
+          <a class="mcore-nav-link mcore-nav-player-brand" py:with="current_url = h.url_for_media(media, qualified=True)" href="${current_url}">
+            <span class="mcore-btn-player-brand"></span><em />
+          </a>
+        </li>
 			</ul>
 		</div>
 	</div>
