@@ -822,6 +822,17 @@ a:focus .grid-title {
 	cursor: pointer;
 }
 
+.meta-hover-embed {
+	visibility: hidden;
+	position: relative;
+	width: 193px;
+	left: 50%;
+	margin-left: -91px;
+	z-index: 1;
+}
+#mcore-embed-featured {
+  margin: 5px;
+}
 .meta-popin {
 	visibility: hidden;
   float: left;
