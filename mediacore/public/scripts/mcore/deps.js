@@ -7,7 +7,7 @@ goog.addDependency('../mcore/excerpts.js', ['mcore.excerpts', 'mcore.excerpts.Ex
 goog.addDependency('../mcore/fx.js', ['mcore.fx', 'mcore.fx.SlideIntoView'], ['goog.fx.dom.ResizeHeight', 'goog.style']);
 goog.addDependency('../mcore/likes.js', ['mcore.likes', 'mcore.likes.LikeThis'], ['goog.dom', 'goog.events', 'goog.net.XhrIo', 'goog.string', 'goog.ui.Component']);
 goog.addDependency('../mcore/net.js', ['mcore.net', 'mcore.net.FormXhrIo'], ['goog.dom.forms', 'goog.events.Event', 'goog.events.EventTarget', 'goog.net.XhrIo']);
-goog.addDependency('../mcore/players/controller.js', ['mcore.players.Controller'], ['goog.Uri', 'goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.dom.ViewportSizeMonitor', 'goog.dom.classes', 'goog.events', 'goog.net.cookies', 'goog.ui.Component', 'mcore.players.ColumnViewResizer', 'mcore.players.Rater', 'mcore.players.WideViewResizer', 'mcore.popups.SimplePopup']);
+goog.addDependency('../mcore/players/controller.js', ['mcore.players.Controller'], ['goog.Uri', 'goog.array', 'goog.dom', 'goog.dom.TagName', 'goog.dom.ViewportSizeMonitor', 'goog.dom.classes', 'goog.events', 'goog.net.cookies', 'goog.ui.Component', 'mcore.players.ColumnViewResizer', 'mcore.players.Rater', 'mcore.players.WideViewResizer', 'mcore.popups.SimplePopin', 'mcore.popups.SimplePopup']);
 goog.addDependency('../mcore/players/flash.js', ['mcore.players.FlashPlayer'], ['goog.ui.media.FlashObject', 'goog.userAgent.flash', 'goog.userAgent.product', 'mcore.players']);
 goog.addDependency('../mcore/players/html5.js', ['mcore.players.Html5Player'], ['goog.array', 'goog.dom', 'goog.events', 'goog.ui.Component', 'goog.userAgent.product', 'mcore.players']);
 goog.addDependency('../mcore/players/iframe.js', ['mcore.players.IframePlayer'], ['goog.dom.TagName', 'goog.ui.Component', 'mcore.players']);
@@ -17,4 +17,5 @@ goog.addDependency('../mcore/players/players.js', ['mcore.players', 'mcore.playe
 goog.addDependency('../mcore/players/rater.js', ['mcore.players.Rater'], ['goog.dom', 'goog.events', 'goog.net.XhrIo', 'goog.string', 'goog.ui.Component']);
 goog.addDependency('../mcore/players/resizer.js', ['mcore.players.ColumnViewResizer', 'mcore.players.ResizerBase', 'mcore.players.WideViewResizer'], ['goog.dom.classes', 'goog.events.EventTarget', 'goog.style']);
 goog.addDependency('../mcore/players/sublime.js', ['mcore.players.SublimePlayer'], ['goog.dom.TagName', 'goog.ui.Component', 'mcore.players']);
+goog.addDependency('../mcore/popins.js', ['mcore.popups.SimplePopin'], ['goog.dom', 'goog.dom.TagName', 'goog.dom.forms', 'goog.events', 'goog.ui.PopupBase']);
 goog.addDependency('../mcore/popups.js', ['mcore.popups', 'mcore.popups.SimplePopup'], ['goog.dom', 'goog.dom.TagName', 'goog.dom.forms', 'goog.events', 'goog.ui.PopupBase']);
