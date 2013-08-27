@@ -65,14 +65,14 @@ See LICENSE.txt in the main project directory, for more information.
 						<li py:if="not show_like and not show_dislike" class="mcore-nav-left"><span class="mcore-nav-link"><span></span></span></li>
 					</py:otherwise>
 				</py:choose>
-				<li py:if="show_share" class="f-rgt 'mcore-nav-right'">
-          <div id="show-share" class="mcore-nav-link" py:with="current_url = h.url_for_media(media, qualified=True)">
-              <div class="meta-share-button">
+				<li py:if="show_share" class="f-rgt mcore-nav-right">
+          <span id="show-share" class="mcore-nav-link" py:with="current_url = h.url_for_media(media, qualified=True)">
+              <span class="meta-share-button">
               <a class="share-email" title="Share by email" href="mailto:?subject=${media.title}&amp;body=${current_url}">Share by Email</a>
               <a class="share-facebook" title="Share on Facebook" href="http://www.facebook.com/sharer/sharer.php?u=${current_url}">Share on Facebook</a>
               <a class="share-twitter" title="Share on Twitter" href="http://twitter.com/home?status=${media.title + ': ' + current_url}">Share on Twitter</a>
-              </div>
-          </div>
+              </span>
+          </span>
 				</li>
 				<li py:if="show_embed" class="f-rgt ${not show_share and 'mcore-nav-right' or None}">
 					<div id="embedthis-hover" class="meta-popin mcore-nav-link">

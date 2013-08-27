@@ -210,7 +210,11 @@ mcore.players.Controller.prototype.decorateInternal = function(element) {
  */
 mcore.players.Controller.prototype.enterDocument = function() {
   if (this.isFillScreen_) {
-    this.player_.setSize(this.dom_.getViewportSize());
+      var vsm = goog.dom.ViewportSizeMonitor.getInstanceForWindow(
+        this.dom_.getWindow());
+      var size = vsm.getSize();
+      size.height = size.height - 38;
+      this.player_.setSize(size);
   } else if (this.resizerBtn_) {
     // Resize the player according to the user's saved preference IF the
     // current player is actually resizeable.
@@ -466,6 +470,7 @@ mcore.players.Controller.prototype.setFillScreen = function(enabled) {
 mcore.players.Controller.prototype.handleViewportResize = function(e) {
   var vsm = /** @type {goog.dom.ViewportSizeMonitor} */ (e.target);
   var size = vsm.getSize();
+  size.height = size.height - 38;
   this.player_.setSize(size);
 };
 
