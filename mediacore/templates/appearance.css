@@ -87,6 +87,16 @@ span.mcore-btn-player-brand {
     background: url('${appearance_player_brand}') no-repeat center;
     width: 193px;
 }
+@media (max-width: 625px) {
+  a.mcore-nav-player-brand {
+    display: none;
+  }
+}
+@media (max-width: 400px) {
+  a.embedthis-hover, #embedthis-hover {
+    display: none;
+  }
+}
 .mcore-nav-link:hover > span.mcore-btn-player-brand {
   background-position: center;
 }
