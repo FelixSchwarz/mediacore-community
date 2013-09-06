@@ -78,7 +78,7 @@ See LICENSE.txt in the main project directory, for more information.
 					<div id="embedthis-hover" class="meta-popin mcore-nav-link">
 							<input type="text" value="${unicode(embed_code)}" readonly="readonly" />
 					</div>
-					<a class="mcore-nav-link embedthis-hover" href="#" title="Embed"><span>Embed</span><em /></a>
+					<a class="mcore-nav-link embedthis-hover" href="#" title="Embed"><span>Embed</span></a>
 				</li>
         <li py:if="show_player_brand" class="f-rgt ${not (show_share or show_embed) and 'mcore-nav-right' or None}">
           <a class="mcore-nav-link mcore-nav-player-brand" py:with="current_url = h.url_for_media(media, qualified=True)" href="${current_url}">
