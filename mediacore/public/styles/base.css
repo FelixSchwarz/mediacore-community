@@ -835,6 +835,7 @@ a:focus .grid-title {
 }
 .meta-popin {
 	visibility: hidden;
+  width: 0px;
   float: left;
 	z-index: 1;
 }
@@ -878,12 +879,15 @@ a:focus .grid-title {
 }
 .meta-popin input {
 	margin-top: 4px;
-	margin-left: 5px;
+	margin-left: 3px;
 	padding: 5px;
-	width: 141px;
+	width: 73px;
 	border: 1px solid #c6c6c6;
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
+}
+.popin-expand {
+  width: 89px;
 }
 .meta-hover-content ul {
 	margin: 0 0 0 16px;
@@ -899,11 +903,6 @@ a:focus .grid-title {
 .meta-hover-content ul a {
 	display: block;
 	margin-left: -1px;
-}
-div.meta-share-button {
-	height: 37px;
-	margin: 0;
-  float: left;
 }
 ul.meta-hover-bottom {
   list-style: none;
