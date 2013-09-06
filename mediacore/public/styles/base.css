@@ -833,6 +833,19 @@ a:focus .grid-title {
 #mcore-embed-featured {
   margin: 5px;
 }
+
+.mcore-player-embed .mcore-playerbar .mcore-nav-left .mcore-nav-link,
+.mcore-player-embed .mcore-playerbar .mcore-nav-right .mcore-nav-link > em {
+  background-image: none;
+}
+.mcore-player-embed .mcore-nav-left .mcore-nav-link,
+.mcore-player-embed .mcore-nav-right .mcore-nav-link > em {
+  background-image: none;
+}
+.mcore-player-embed .mcore-playerbar .mcore-nav-left {
+  margin-left: -15px;
+}
+
 .meta-popin {
 	visibility: hidden;
   width: 0px;

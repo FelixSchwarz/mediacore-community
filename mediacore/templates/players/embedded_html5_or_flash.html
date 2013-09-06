@@ -23,7 +23,7 @@ See LICENSE.txt in the main project directory, for more information.
 
 	<xi:include py:for="tmpl in value_of('plugin_templates', ())" href="${tmpl}" />
 
-	<div py:if="player" id="${player.elem_id}-wrapper" class="mcore-player">
+	<div py:if="player" id="${player.elem_id}-wrapper" class="mcore-player mcore-player-embed">
 		<div class="mcore-playerbox">
 			${player.render_markup()}
 		</div>
