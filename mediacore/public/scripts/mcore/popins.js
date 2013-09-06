@@ -32,8 +32,6 @@ mcore.popups.SimplePopin = function(opt_element) {
   goog.base(this, opt_element);
   this.setHideOnEscape(false);
   this.setAutoHide(false);
-  var element = this.getElement();
-  element.style.setProperty("width", "0px");
 };
 goog.inherits(mcore.popups.SimplePopin, goog.ui.PopupBase);
 
@@ -66,8 +64,13 @@ mcore.popups.SimplePopin.prototype.handleClick = function(e) {
   e.preventDefault();
   this.setVisible(!this.isOrWasRecentlyVisible());
   var element = this.getElement();
-  this.isOrWasRecentlyVisible() ? element.style.setProperty("width", "160px") : element.style.setProperty("width", "0px");
-  this.anchor.style.setProperty("visibility", this.isOrWasRecentlyVisible() ? "hidden" : "visible");
+  if (this.isOrWasRecentlyVisible()) {
+    goog.dom.classlist.add(element, "popin-expand");
+  } else {
+    goog.dom.classlist.remove(element, "popin-expand");
+  }
+  this.anchor.remove();
+
 };
 
 
@@ -83,18 +86,11 @@ mcore.popups.SimplePopin.prototype.onShow_ = function() {
   var element = this.getElement();
   var input = goog.dom.getElementsByTagNameAndClass(goog.dom.TagName.INPUT,
       null, element)[0];
-  var anchors = goog.dom.getElementsByTagNameAndClass(goog.dom.TagName.A, null,
-      element);
 
   if (input) {
     goog.dom.forms.focusAndSelect(input);
   }
 
-  for (var anchor, i = 0; anchor = anchors[i]; ++i) {
-    if (!anchor.target && 'mailto:' != anchor.href.substr(0, 7)) {
-      anchor.target = '_blank';
-    }
-  }
 };
 
 
