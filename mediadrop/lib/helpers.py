@@ -35,7 +35,7 @@ from mediadrop.lib.players import (embed_player, embed_iframe, embed_featured, m
 from mediadrop.lib.thumbnails import thumb, thumb_url
 from mediadrop.lib.uri import (best_link_uri, download_uri, file_path,
     pick_uri, pick_uris, web_uri)
-from mediadrop.lib.util import (current_url, delete_files, merge_dicts,
+from mediadrop.lib.util import (current_url, delete_files, merge_dicts, 
     redirect, url, url_for, url_for_media)
 from mediadrop.lib.xhtml import (clean_xhtml, decode_entities, encode_entities,
     excerpt_xhtml, line_break_xhtml, list_acceptable_xhtml, strip_xhtml,

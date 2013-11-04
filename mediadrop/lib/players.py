@@ -145,7 +145,7 @@ class AbstractPlayer(AbstractClass):
     def inject_in_db(cls, enable_player=False):
         from mediadrop.model import DBSession
         from mediadrop.model.players import players as players_table, PlayerPrefs
-
+        
         prefs = PlayerPrefs()
         prefs.name = cls.name
         prefs.enabled = enable_player

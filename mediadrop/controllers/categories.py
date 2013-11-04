@@ -12,9 +12,9 @@ from sqlalchemy import orm
 from mediadrop.lib.base import BaseController
 from mediadrop.lib.decorators import (beaker_cache, expose, observable,
     paginate, validate)
-from mediadrop.model import Category, Media, fetch_row, Tag
 from mediadrop.lib.helpers import content_type_for_response, url_for, viewable_media
 from mediadrop.lib.i18n import gettext as _
+from mediadrop.model import Category, Media, fetch_row, Tag
 from mediadrop.plugin import events
 from mediadrop.validation import LimitFeedItemsValidator
 
