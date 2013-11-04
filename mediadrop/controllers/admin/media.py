@@ -30,7 +30,6 @@ from mediadrop.lib.thumbnails import thumb_path, thumb_paths, create_thumbs_for,
 from mediadrop.model import Author, Category, Media, Podcast, Tag, fetch_row, get_available_slug
 from mediadrop.model.meta import DBSession
 from mediadrop.plugin import events
-from mediadrop.model.authors import Author
 
 import logging
 log = logging.getLogger(__name__)
