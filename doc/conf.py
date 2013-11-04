@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# MediaCore documentation build configuration file, created by
+# MediaDrop documentation build configuration file, created by
 # sphinx-quickstart on Fri Sep  4 13:43:20 2009.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -58,8 +58,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'MediaCore'
-copyright = u'2009-2013, MediaCore Inc., Felix Schwarz and other contributors'
+project = u'MediaDrop'
+copyright = u'2009-2013, MediaDrop Contributors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -179,7 +179,7 @@ html_static_path = ['_static']
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'MediaCoredoc'
+htmlhelp_basename = 'MediaDropdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -192,10 +192,7 @@ htmlhelp_basename = 'MediaCoredoc'
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
-latex_documents = [
-  ('index', 'MediaCore.tex', u'MediaCore Documentation',
-   u'MediaCore Inc.', 'manual'),
-]
+# latex_documents = []
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.

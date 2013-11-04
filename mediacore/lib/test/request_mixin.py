@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# This file is a part of MediaCore CE (http://www.mediacorecommunity.org),
-# Copyright 2009-2013 MediaCore Inc., Felix Schwarz and other contributors.
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
 # For the exact contribution history, see the git revision log.
 # The source code in this file is is dual licensed under the MIT license or
 # the GPLv3 or (at your option) any later version.
@@ -8,7 +8,7 @@
 
 import pylons
 
-from mediacore.lib.auth.permission_system import MediaCorePermissionSystem
+from mediacore.lib.auth.permission_system import MediaDropPermissionSystem
 from mediacore.lib.test.support import fake_request
 
 
@@ -28,10 +28,10 @@ class RequestMixin(object):
             identity = wsgi_environ.setdefault('repoze.who.identity', {})
             identity.update({
                 'user': user,
-                'repoze.who.userid': user.user_id,
+                'repoze.who.userid': user.id,
             })
-        perm = MediaCorePermissionSystem.permissions_for_request(wsgi_environ, self.pylons_config)
-        wsgi_environ['mediacore.perm'] = perm
+        perm = MediaDropPermissionSystem.permissions_for_request(wsgi_environ, self.pylons_config)
+        wsgi_environ['mediadrop.perm'] = perm
         pylons.request.perm = perm
     
     def remove_globals(self):

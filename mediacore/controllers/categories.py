@@ -1,5 +1,5 @@
-# This file is a part of MediaCore CE (http://www.mediacorecommunity.org),
-# Copyright 2009-2013 MediaCore Inc., Felix Schwarz and other contributors.
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
 # For the exact contribution history, see the git revision log.
 # The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
@@ -61,6 +61,11 @@ class CategoriesController(BaseController):
 
         if c.category:
             media = media.in_category(c.category)
+            
+            response.feed_links.append((
+                url_for(controller='/categories', action='feed', slug=c.category.slug),
+                _('Latest media in %s') % c.category.name
+            ))
 
             response.feed_links.append((
                 url_for(controller='/categories', action='feed', slug=c.category.slug),
@@ -122,7 +127,9 @@ class CategoriesController(BaseController):
             media = media.in_category(c.category)
 
         media_query = media.order_by(Media.publish_on.desc())
-        media = viewable_media(media_query).limit(limit)
+        media = viewable_media(media_query)
+        if limit is not None:
+            media = media.limit(limit)
 
         return dict(
             media = media,

@@ -1,5 +1,5 @@
-# This file is a part of MediaCore CE (http://www.mediacorecommunity.org),
-# Copyright 2009-2013 MediaCore Inc., Felix Schwarz and other contributors.
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
 # For the exact contribution history, see the git revision log.
 # The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
@@ -8,6 +8,7 @@
 from pylons import request, response
 from sqlalchemy import orm
 
+from mediacore.lib.auth.util import viewable_media
 from mediacore.lib import helpers
 from mediacore.lib.base import BaseController
 from mediacore.lib.decorators import (beaker_cache, expose, observable, 
@@ -18,7 +19,6 @@ from mediacore.plugin import events
 from mediacore.validation import LimitFeedItemsValidator
 
 import logging
-from mediacore.lib.auth.util import viewable_media
 log = logging.getLogger(__name__)
 
 class PodcastsController(BaseController):

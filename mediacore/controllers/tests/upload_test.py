@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# This file is a part of MediaCore CE (http://www.mediacorecommunity.org),
-# Copyright 2009-2013 MediaCore Inc., Felix Schwarz and other contributors.
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
 # For the exact contribution history, see the git revision log.
 # The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
@@ -73,7 +73,7 @@ class UploadControllerTest(ControllerTestCase):
         request = self.init_fake_request(method='POST', request_uri='/upload/submit', 
             post_vars=self._upload_parameters())
         response = self.assert_redirect(lambda: self._upload(request))
-        assert_equals('http://mediacore.example/upload/success', response.location)
+        assert_equals('http://mediadrop.example/upload/success', response.location)
         self._assert_succesful_media_upload()
 
 

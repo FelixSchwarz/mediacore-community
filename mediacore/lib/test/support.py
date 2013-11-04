@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# This file is a part of MediaCore CE (http://www.mediacorecommunity.org),
-# Copyright 2009-2013 MediaCore Inc., Felix Schwarz and other contributors.
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
 # For the exact contribution history, see the git revision log.
 # The source code in this file is is dual licensed under the MIT license or
 # the GPLv3 or (at your option) any later version.
@@ -40,18 +40,18 @@ def setup_environment_and_database(env_dir=None, enabled_plugins=''):
     env_dir = env_dir or '/invalid'
     app_config = {
         'plugins': enabled_plugins,
-        'sqlalchemy.url': 'sqlite://', 
-        'layout_template': 'layout', 
+        'sqlalchemy.url': 'sqlite://',
+        'layout_template': 'layout',
         'external_template': 'false',
-        'image_dir': os.path.join(env_dir, 'images'), 
-        'media_dir': os.path.join(env_dir, 'media'), 
+        'image_dir': os.path.join(env_dir, 'images'),
+        'media_dir': os.path.join(env_dir, 'media'),
     }
     pylons_config = load_environment(global_config, app_config)
     metadata.create_all(bind=DBSession.bind, checkfirst=True)
     return pylons_config
 
 # -----------------------------------------------------------------------------
-# unfortunately neither Python 2.4 nor any existing MediaCore dependencies come 
+# unfortunately neither Python 2.4 nor any existing MediaDrop dependencies come
 # with reusable methods to create a HTTP request body so I build a very basic 
 # implementation myself. 
 # The code is only used for unit tests so it doesn't have to be rock solid.
@@ -119,7 +119,21 @@ def create_wsgi_environ(url, request_method, request_body=None):
         return wsgi_environ
 
 
-def fake_request(pylons_config, server_name='mediacore.example', language='en', 
+def setup_translator(language='en', registry=None, locale_dirs=None):
+    if not locale_dirs:
+        mediacore_i18n_path = os.path.join(os.path.dirname(mediacore.__file__), 'i18n')
+        locale_dirs = {'mediacore': mediacore_i18n_path}
+    translator = Translator(language, locale_dirs=locale_dirs)
+    
+    # not sure why but sometimes pylons.translator is not a StackedObjectProxy
+    # but just a regular Translator.
+    if not hasattr(pylons.translator, '_push_object'):
+        pylons.translator = StackedObjectProxy()
+    if registry is None:
+        registry = pylons.request.environ['paste.registry']
+    registry.replace(pylons.translator, translator)
+
+def fake_request(pylons_config, server_name='mediadrop.example', language='en',
                  method='GET', request_uri='/', post_vars=None):
     app_globals = pylons_config['pylons.app_globals']
     pylons.app_globals._push_object(app_globals)
@@ -141,7 +155,8 @@ def fake_request(pylons_config, server_name='mediacore.example', language='en',
     routes_url = URLGenerator(pylons_config['routes.map'], wsgi_environ)
     pylons.url._push_object(routes_url)
 
-    # TODO: Use ContextObj() for Pylons 0.10
+    # Use ContextObj() when we get rid of 'pylons.strict_tmpl_context=False' in
+    # mediacore.lib.environment
     tmpl_context = AttribSafeContextObj()
     tmpl_context.paginators = Bunch()
     pylons.tmpl_context._push_object(tmpl_context)
@@ -154,14 +169,8 @@ def fake_request(pylons_config, server_name='mediacore.example', language='en',
     engines = create_tw_engine_manager(app_globals)
     host_framework = PylonsHostFramework(engines=engines)
     paste_registry.register(tw.framework, host_framework)
-    
-    mediacore_i18n_path = os.path.join(os.path.dirname(mediacore.__file__), 'i18n')
-    translator = Translator(language, dict(mediacore=mediacore_i18n_path))
-    # not sure why but sometimes pylons.translator is not a StackedObjectProxy
-    # but just a regular Translator.
-    if not hasattr(pylons.translator, '_push_object'):
-        pylons.translator = StackedObjectProxy()
-    paste_registry.replace(pylons.translator, translator)
+    setup_translator(language=language, registry=paste_registry,
+        locale_dirs=pylons_config.get('locale_dirs'))
     
     wsgi_environ.update({
         'pylons.pylons': pylons,

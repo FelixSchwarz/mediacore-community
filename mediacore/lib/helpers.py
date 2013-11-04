@@ -1,5 +1,5 @@
-# This file is a part of MediaCore CE (http://www.mediacorecommunity.org),
-# Copyright 2009-2013 MediaCore Inc., Felix Schwarz and other contributors.
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
 # For the exact contribution history, see the git revision log.
 # The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
@@ -101,7 +101,7 @@ __all__ = [
     'gravatar_from_email',
     'is_admin',
     'js',
-    'mediacore_version',
+    'mediadrop_version',
     'pick_any_media_file',
     'pick_podcast_media_file',
     'pretty_file_size',
@@ -126,7 +126,7 @@ def js(source):
         return url_for(js_sources_debug[source])
     return url_for(js_sources[source])
 
-def mediacore_version():
+def mediadrop_version():
     import mediacore
     return mediacore.__version__
 
@@ -388,7 +388,7 @@ def doc_link(page=None, anchor='', text=N_('Help'), **kwargs):
     XXX: Target attribute is not XHTML compliant.
     """
     attrs = {
-        'href': 'http://mediacorecommunity.org/docs/user/%s.html#%s' % (page, anchor),
+        'href': 'http://mediadrop.net/docs/user/%s.html#%s' % (page, anchor),
         'target': '_blank',
     }
     if kwargs:
