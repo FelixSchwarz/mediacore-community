@@ -1,9 +1,15 @@
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
+# (at your option) any later version.
+# See LICENSE.txt in the main project directory, for more information.
 import os
 from datetime import datetime
 
-from sqlalchemy import Table, ForeignKey, Column
+from sqlalchemy import Table, ForeignKey, Column, not_
 from sqlalchemy.types import Unicode, Integer, DateTime
-from sqlalchemy.orm import backref, mapper, relation, synonym
+from sqlalchemy.orm import mapper, relation, synonym
 
 from mediacore.model.meta import DBSession, metadata
 from mediacore.lib.compat import any, sha1
@@ -90,10 +96,25 @@ class User(object):
         # TODO: Move this function to User.query
         return DBSession.query(cls).filter(cls.user_name==username).first()
 
+    @classmethod
+    def example(cls, **kwargs):
+        user = User()
+        defaults = dict(
+            user_name = u'joe',
+            email_address = u'joe@site.example',
+            display_name = u'Joe Smith',
+            created = datetime.now(),
+        )
+        defaults.update(kwargs)
+        for key, value in defaults.items():
+            setattr(user, key, value)
+        
+        DBSession.add(user)
+        DBSession.flush()
+        return user
+
     def _set_password(self, password):
         """Hash password on the fly."""
-        hashed_password = password
-
         if isinstance(password, unicode):
             password_8bit = password.encode('UTF-8')
         else:
@@ -101,11 +122,11 @@ class User(object):
 
         salt = sha1()
         salt.update(os.urandom(60))
-        hash = sha1()
-        hash.update(password_8bit + salt.hexdigest())
-        hashed_password = salt.hexdigest() + hash.hexdigest()
+        hash_ = sha1()
+        hash_.update(password_8bit + salt.hexdigest())
+        hashed_password = salt.hexdigest() + hash_.hexdigest()
 
-        # make sure the hased password is an UTF-8 object at the end of the
+        # make sure the hashed password is an UTF-8 object at the end of the
         # process because SQLAlchemy _wants_ a unicode object for Unicode columns
         if not isinstance(hashed_password, unicode):
             hashed_password = hashed_password.decode('UTF-8')
@@ -131,10 +152,14 @@ class User(object):
         hashed_pass.update(password + self.password[:40])
         return self.password[40:] == hashed_pass.hexdigest()
 
+
 class Group(object):
     """
     An ultra-simple group definition.
     """
+
+    query = DBSession.query_property()
+
     def __init__(self, name=None, display_name=None):
         self.group_name = name
         self.display_name = display_name
@@ -144,23 +169,67 @@ class Group(object):
 
     def __unicode__(self):
         return self.group_name
+    
+    @classmethod
+    def custom_groups(cls, *columns):
+        query_object = columns or (Group, )
+        return DBSession.query(*query_object).\
+            filter(
+                not_(Group.group_name.in_([u'anonymous', u'authenticated']))
+            )
+
+    @classmethod
+    def by_name(cls, name):
+        return cls.query.filter(cls.group_name == name).first()
+    
+    @classmethod
+    def example(cls, **kwargs):
+        defaults = dict(
+            name = u'baz_users',
+            display_name = u'Baz Users',
+        )
+        defaults.update(kwargs)
+        group = Group(**defaults)
+        DBSession.add(group)
+        DBSession.flush()
+        return group
+
 
 class Permission(object):
     """
     A relationship that determines what each Group can do
     """
-    def __init__(self, name=None, desc=None):
+    def __init__(self, name=None, description=None, groups=None):
         self.permission_name = name
-        self.description = desc
+        self.description = description
+        if groups is not None:
+            self.groups = groups
 
     def __unicode__(self):
         return self.permission_name
+    
+    def __repr__(self):
+        return '<Permission: name=%r>' % self.permission_name
+    
+    @classmethod
+    def example(cls, **kwargs):
+        defaults = dict(
+            name=u'foo',
+            description = u'foo permission',
+            groups = None,
+        )
+        defaults.update(kwargs)
+        permission = Permission(**defaults)
+        DBSession.add(permission)
+        DBSession.flush()
+        return permission
 
 
 mapper(
     User, users,
     extension=events.MapperObserver(events.User),
     properties={
+        'id': users.c.user_id,
         'password': synonym('_password', map_column=True),
     },
 )

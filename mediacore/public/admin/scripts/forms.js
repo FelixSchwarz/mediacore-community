@@ -1,26 +1,19 @@
 /**
- * This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
- *
- * MediaCore is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * This file is a part of MediaDrop (http://www.mediadrop.net),
+ * Copyright 2009-2013 MediaDrop contributors
+ * For the exact contribution history, see the git revision log.
+ * The source code contained in this file is licensed under the GPLv3 or
  * (at your option) any later version.
- *
- * MediaCore is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+ * See LICENSE.txt in the main project directory, for more information.
+ **/
+
 String.implement({
 
 	slugify: function(){
 		return this.toString().trim().tidy().standardize().toLowerCase()
 			.replace(/\s+/g,'-')
 			.replace(/&(\#x?[0-9a-f]{2,6}|[a-z]{2,10});/g, '') // strip xhtml entities, they should be entered as unicode anyway
-			.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue') // some common german chars
+			.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss') // some common german chars
 			.replace(/[^a-z0-9\-]/g,'');
 	}
 
@@ -198,6 +191,19 @@ var BoxForm = new Class({
 
 	injectError: function(msg, name){
 		var label = this.form.getElement('label[for=' + name + ']');
+		if (label === null) {
+		    /* This may happen if an element has it's label suppressed (e.g.
+		     * a container widget). Not to highlight the error is not nice but
+		     * at least the users is notified about the error right next to the
+		     * 'save' button (as opposed to an endless spinner and a usually 
+		     * invisible JS exception).
+		     * Also this situation should not appear in stock MediaCore but only
+		     * with optional plugins.
+		     */
+		    if (window.console !== undefined)
+		        console.log('unable to display error message "' + msg + '" for field "' + name + '"');
+	        return;
+		}
 		var el = new Element('span', {'class': 'field_error', text: msg}).inject(label, 'after');
 		var field = this.form.getElementById(name).highlight();
 	},

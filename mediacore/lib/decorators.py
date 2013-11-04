@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 import logging
 import warnings
@@ -26,13 +18,10 @@ from paste.deploy.converters import asbool
 from pylons import config, request, response, tmpl_context, translator
 from pylons.decorators.cache import create_cache_key, _make_dict_from_args
 from pylons.decorators.util import get_pylons
-from repoze.what.plugins.pylonshq import ActionProtector
-from repoze.what.predicates import has_permission
 from webob.exc import HTTPException, HTTPMethodNotAllowed
 
 from mediacore.lib.paginate import paginate
 from mediacore.lib.templating import render
-from mediacore.model.meta import DBSession
 
 __all__ = [
     'ValidationState',
@@ -131,7 +120,8 @@ def _expose_wrapper(f, template, request_method=None, permission=None):
         return render(tmpl, tmpl_vars=result, method='auto')
 
     if permission:
-        wrapped_f = ActionProtector(has_permission(permission))(wrapped_f)
+        from mediacore.lib.auth import FunctionProtector, has_permission
+        wrapped_f = FunctionProtector(has_permission(permission)).wrap(wrapped_f)
 
     return wrapped_f
 
@@ -261,7 +251,7 @@ class validate(object):
       form
         Pass in a ToscaWidget based form with validators
 
-    The first positional parameter can either be a dictonary of validators,
+    The first positional parameter can either be a dictionary of validators,
     a FormEncode schema validator, or a callable which acts like a FormEncode
     validator.
     """
@@ -481,8 +471,9 @@ def beaker_cache(key="cache_default", expire="never", type=None,
             key_dict = kwargs.copy()
             key_dict.update(_make_dict_from_args(func, args))
 
-            ## FIXME: if we can stop there variables from being passed to the controller
-            # action then we can use the stock beaker_cache.
+            ## FIXME: if we can stop there variables from being passed to the
+            # controller action (also the Genshi Markup/pickle problem is
+            # fixed, see below) then we can use the stock beaker_cache.
             # Remove some system variables that can cause issues while generating cache keys
             [key_dict.pop(x, None) for x in ("pylons", "start_response", "environ")]
 
@@ -521,6 +512,11 @@ def beaker_cache(key="cache_default", expire="never", type=None,
             log.debug("Creating new cache copy with key: %s, type: %s",
                       cache_key, type)
             result = func(*args, **kwargs)
+            # This is one of the two changes to the stock beaker_cache
+            # decorator
+            if hasattr(result, '__html__'):
+                # Genshi Markup object, can not be pickled
+                result = unicode(result.__html__())
             glob_response = pylons.response
             headers = glob_response.headerlist
             status = glob_response.status
@@ -548,8 +544,10 @@ def observable(event):
     :returns: A decorator function.
     """
     def wrapper(func, *args, **kwargs):
+        for observer in event.pre_observers:
+            args, kwargs = observer(*args, **kwargs)
         result = func(*args, **kwargs)
-        for observer in event.observers:
+        for observer in event.post_observers:
             result = observer(**result)
         return result
     return decorator(wrapper)
@@ -622,6 +620,7 @@ def autocommit(func, *args, **kwargs):
         return result
 
 def _autocommit_commit(req):
+    from mediacore.model.meta import DBSession
     try:
         DBSession.commit()
     except:
@@ -631,6 +630,7 @@ def _autocommit_commit(req):
         _autocommit_fire_callbacks(req, req.commit_callbacks)
 
 def _autocommit_rollback(req):
+    from mediacore.model.meta import DBSession
     DBSession.rollback()
     _autocommit_fire_callbacks(req, req.rollback_callbacks)
 

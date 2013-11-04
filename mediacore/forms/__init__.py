@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 from BeautifulSoup import BeautifulStoneSoup
 from formencode import FancyValidator
@@ -28,11 +20,30 @@ from mediacore.lib.templating import tmpl_globals
 from mediacore.lib.util import url_for
 from mediacore.plugin import events
 
-class LeniantValidationMixin(object):
-    validator = forms.validators.Schema(
+
+def leniant_schema():
+    return forms.validators.Schema(
+        # workaround to prevent an error if no checkbox is checked in a list
+        # of checkboxes (e.g. sitemaps form, category association for media)
+        # http://groups.google.com/group/toscawidgets-discuss/msg/36261a59e6745591
+        if_key_missing='',
         # TODO: See if this is necessary now that we've stripped turbogears out.
         allow_extra_fields=True, # Allow extra kwargs that tg likes to pass: pylons, start_request, environ...
     )
+
+class LeniantValidationMixin(object):
+    validator = None
+    event = None
+    
+    def post_init(self, *args, **kwargs):
+        # we need to ensure that each form instance gets its own Schema instance
+        # so it is safe for plugins to change class-level variables (e.g.
+        # adding chained validators)
+        if not self.validator:
+            self.validator = leniant_schema()
+        
+        if getattr(self, 'event', None):
+            self.event(self)
 
 class LinkifyMixin(object):
     """
@@ -73,11 +84,16 @@ class SubmitButton(forms.SubmitButton):
     that are submitted without a submit button. The value for unclicked
     submit buttons will simply be C{None}.
     """
-    validator = forms.validators.UnicodeString(if_missing=None)
+    # if_missing/if_empty=None is important so the button text is displayed
+    # correctly in case the form is displayed with errors (in which case the 
+    # request parameters contain an empty ('') value for submit button and
+    # ToscaWidgets will only use the default text if the value is None).
+    validator = forms.validators.UnicodeString(if_missing=None, if_empty=None)
     template = 'forms/button.html'
 
 class ResetButton(forms.ResetButton):
-    validator = forms.validators.UnicodeString(if_missing=None)
+    # see SubmitButton for background on if_missing/if_empty
+    validator = forms.validators.UnicodeString(if_missing=None, if_empty=None)
     template = 'forms/button.html'
 
 class GlobalMixin(object):
@@ -106,7 +122,7 @@ class CheckBoxList(GlobalMixin, forms.CheckBoxList):
 class FileField(GlobalMixin, FileField):
     pass
 
-class ListFieldSet(forms.ListFieldSet):
+class ListFieldSet(LeniantValidationMixin, forms.ListFieldSet):
     template = 'forms/fieldset.html'
 
 class XHTMLEntityValidator(FancyValidator):

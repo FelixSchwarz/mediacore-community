@@ -1,29 +1,19 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 import logging
+from formencode.validators import Int
 
-from pylons import request
-from tw.forms import CheckBox, PasswordField, RadioButtonList, SingleSelectField
-from tw.forms.fields import ContainerMixin as _ContainerMixin
-from tw.forms.validators import All, FancyValidator, FieldsMatch, Invalid, NotEmpty, PlainText, Schema, StringBool
+from tw.forms import CheckBox, RadioButtonList
+from tw.forms.validators import StringBool
 
-from mediacore.forms import ListFieldSet, ListForm, SubmitButton, ResetButton, TextField
+from mediacore.forms import ListFieldSet, ListForm, SubmitButton, TextField
 from mediacore.lib.i18n import N_, _
 from mediacore.lib.util import merge_dicts
 from mediacore.plugin import events
-from mediacore.plugin.abc import abstractmethod
 
 log = logging.getLogger(__name__)
 
@@ -101,6 +91,8 @@ class HTML5OrFlashPrefsForm(PlayerPrefsForm):
             validator=StringBool,
         ),
     ] + PlayerPrefsForm.buttons
+    
+    event = events.Admin.Players.HTML5OrFlashPrefsForm
 
     def display(self, value, player, **kwargs):
         value.setdefault('prefer_flash', player.data.get('prefer_flash', False))
@@ -110,6 +102,8 @@ class HTML5OrFlashPrefsForm(PlayerPrefsForm):
         player.data['prefer_flash'] = prefer_flash
 
 class SublimePlayerPrefsForm(PlayerPrefsForm):
+    event = events.Admin.Players.SublimePlayerPrefsForm
+    
     fields = [
         TextField('script_tag',
             label_text=N_('Script Tag'),
@@ -126,19 +120,56 @@ class SublimePlayerPrefsForm(PlayerPrefsForm):
         if not script_tag and player.enabled:
             player.enabled = False
 
-class YoutubeFlashPlayerPrefsForm(PlayerPrefsForm):
+class YoutubePlayerPrefsForm(PlayerPrefsForm):
+    event = events.Admin.Players.YoutubeFlashPlayerPrefsForm
+    
     fields = [
         ListFieldSet('options',
             suppress_label=True,
             legend=N_('Player Options:'),
             children=[
-                CheckBox('disablekb', label_text=N_('Disable the player keyboard controls.')),
-                CheckBox('fs', label_text=N_('Enable fullscreen.')),
-                CheckBox('hd', label_text=N_('Enable high-def quality by default.')),
-                CheckBox('rel', label_text=N_('Allow the player to load related videos once playback of the initial video starts. Related videos are displayed in the "genie menu" when the menu button is pressed.')),
-                CheckBox('showsearch', label_text=N_('Show the search box when the video is minimized. The above option must be enabled for this to work.')),
-                CheckBox('showinfo', label_text=N_('Display information like the video title and rating before the video starts playing.')),
-                CheckBox('autohide', label_text=N_('Autohide the controls after a video starts playng.')),
+                RadioButtonList('version',
+                    options=lambda: (
+                        (2, _('Use the deprecated AS2 player.')),
+                        (3, _('Use the AS3/HTML5 player.')),
+                    ),
+                    css_label_classes=['container-list-label'],
+                    label_text=N_("YouTube player version"),
+                    validator=Int,
+                ),
+                RadioButtonList('iv_load_policy',
+                    options=lambda: (
+                        (1, _('Show video annotations by default.')),
+                        (3, _('Hide video annotations by default.')),
+                    ),
+                    css_label_classes=['container-list-label'],
+                    label_text=N_("Video annotations"),
+                    validator=Int,
+                ),
+                CheckBox('disablekb', label_text=N_('Disable the player keyboard controls.'),
+                    help_text=N_('Not supported by HTML5 player.')),
+                CheckBox('autoplay', label_text=N_('Autoplay the video when the player loads.')),
+                CheckBox('modestbranding', label_text=N_('Do not show YouTube logo in the player controls'), 
+                    help_text=N_('Not supported by AS2 player.')),
+                CheckBox('fs', label_text=N_('Display fullscreen button.')),
+                CheckBox('hd', label_text=N_('Enable high-def quality by default.'), 
+                    help_text=N_('Applies only for the AS2 player, the AS3 player will choose the most appropriate version of the video version (e.g. considering the user\'s bandwidth)')),
+                CheckBox('rel', label_text=N_('Display related videos after playback of the initial video ends.')),
+                CheckBox('showsearch', label_text=N_('Show the search box when the video is minimized. The related videos option must be enabled for this to work.'),
+                    help_text=N_('AS2 player only')),
+                CheckBox('showinfo', label_text=N_('Display information like the video title and uploader before the video starts playing.')),
+                CheckBox('wmode', label_text=N_('Enable window-less mode (wmode)'), 
+                    help_text=N_('wmode allows HTML/CSS elements to be placed over the actual Flash video but requires more CPU power.')),
+                RadioButtonList('autohide',
+                    options=lambda: (
+                        (0, _('Always show player controls.')),
+                        (1, _('Autohide all player controls after a video starts playing.')),
+                        (2, _('Autohide only the progress bar after a video starts playing.')),
+                    ),
+                    css_label_classes=['container-list-label'],
+                    label_text=N_("Player control hiding"),
+                    validator=Int,
+                ),
             ],
             css_classes=['options'],
         )

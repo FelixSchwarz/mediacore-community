@@ -1,23 +1,14 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 import inspect
 import warnings
 
 from pylons import request, tmpl_context
-from webhelpers import paginate as _paginate
 from webhelpers.paginate import get_wrapper
 from webob.multidict import MultiDict
 from webhelpers.paginate import Page
@@ -33,7 +24,7 @@ from mediacore.lib.compat import wraps
 # FIXME: The following class is taken from TG2.0.3. Find a way to replace it.
 # This is not an ideal solution, but avoids the immediate need to rewrite the
 # paginate and CustomPage methods below.
-# TG licence: http://turbogears.org/2.0/docs/main/License.html
+# TG license: http://turbogears.org/2.0/docs/main/License.html
 class Bunch(dict):
     """A dictionary that provides attribute-style access."""
 
@@ -54,11 +45,34 @@ class Bunch(dict):
         except KeyError:
             raise AttributeError(name)
 
+# The following method is taken from TG2.0.3 (tg/util.py).
+def get_partial_dict(prefix, dictionary):
+    """Given a dictionary and a prefix, return a Bunch, with just items
+    that start with prefix
+
+    The returned dictionary will have 'prefix.' stripped so:
+
+    get_partial_dict('prefix', {'prefix.xyz':1, 'prefix.zyx':2, 'xy':3})
+
+    would return:
+
+    {'xyz':1,'zyx':2}
+    """
+
+    match = prefix + "."
+
+    new_dict = Bunch([(key.lstrip(match), dictionary[key])
+                       for key in dictionary.iterkeys()
+                       if key.startswith(match)])
+    if new_dict:
+        return new_dict
+    else:
+        raise AttributeError
 
 # FIXME: The following function is taken from TG2.0.3. Find a way to replace it.
 # This is not an ideal solution, but avoids the immediate need to rewrite the
 # paginate and CustomPage methods below.
-# TG licence: http://turbogears.org/2.0/docs/main/License.html
+# TG license: http://turbogears.org/2.0/docs/main/License.html
 def partial(*args, **create_time_kwds):
     func = args[0]
     create_time_args = args[1:]
@@ -155,7 +169,7 @@ def paginate(name, items_per_page=10, use_prefix=False, items_first_page=None):
             res = f(*args, **kwargs)
             if isinstance(res, dict) and name in res:
                 additional_parameters = MultiDict()
-                for key, value in request.str_params.iteritems():
+                for key, value in request.params.iteritems():
                     if key not in own_parameters:
                         additional_parameters.add(key, value)
 

@@ -1,35 +1,26 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+# See LICENSE.txt in the main project directory, for more information.
 """
 Media Admin Controller
 """
+
 import os
 import subprocess
 from mediacore.lib.thumbnails import create_thumbs_for
 from datetime import datetime
-from itertools import izip
 
 from formencode import Invalid, validators
-from pylons import config, request, response, session, tmpl_context
-from repoze.what.predicates import has_permission
+from pylons import request, tmpl_context
 from sqlalchemy import orm
 
 from mediacore.forms.admin import SearchForm, ThumbForm
 from mediacore.forms.admin.media import AddFileForm, EditFileForm, MediaForm, UpdateStatusForm
 from mediacore.lib import helpers
+from mediacore.lib.auth import has_permission
 from mediacore.lib.base import BaseController
 from mediacore.lib.decorators import (autocommit, expose, expose_xhr,
     observable, paginate, validate, validate_xhr)
@@ -99,7 +90,7 @@ class MediaController(BaseController):
         elif filter == 'drafts':
             media = media.drafts()
         elif filter == 'published':
-             media = media.published()
+            media = media.published()
 
         if category:
             category = fetch_row(Category, slug=category)
@@ -121,6 +112,9 @@ class MediaController(BaseController):
             podcast = podcast,
         )
 
+    def json_error(self, *args, **kwargs):
+        validation_exception = tmpl_context._current_obj().validation_exception
+        return dict(success=False, message=validation_exception.msg)
 
     @expose('admin/media/edit.html')
     @validate(validators={'podcast': validators.Int()})
@@ -167,7 +161,7 @@ class MediaController(BaseController):
         if tmpl_context.action == 'save' or id == 'new':
             # Use the values from error_handler or GET for new podcast media
             media_values = kwargs
-            user = request.environ['repoze.who.identity']['user']
+            user = request.perm.user
             media_values.setdefault('author_name', user.display_name)
             media_values.setdefault('author_email', user.email_address)
         else:
@@ -295,7 +289,7 @@ class MediaController(BaseController):
 
 
     @expose('json', request_method='POST')
-    @validate(add_file_form)
+    @validate(add_file_form, error_handler=json_error)
     @autocommit
     @observable(events.Admin.MediaController.add_file)
     def add_file(self, id, file=None, url=None, **kwargs):
@@ -331,7 +325,7 @@ class MediaController(BaseController):
         """
         if id == 'new':
             media = Media()
-            user = request.environ['repoze.who.identity']['user']
+            user = request.perm.user
             media.author = Author(user.display_name, user.email_address)
             # Create a temp stub until we can set it to something meaningful
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -385,7 +379,7 @@ class MediaController(BaseController):
     def edit_file(self, id, file_id, file_type=None, duration=None, delete=None, bitrate=None, width_height=None, **kwargs):
         """Save action for the :class:`~mediacore.forms.admin.media.EditFileForm`.
 
-        Changes or delets a :class:`~mediacore.model.media.MediaFile`.
+        Changes or deletes a :class:`~mediacore.model.media.MediaFile`.
 
         XXX: We do NOT use the @validate decorator due to complications with
              partial validation. The JS sends only the value it wishes to
@@ -426,7 +420,7 @@ class MediaController(BaseController):
                 file.type = fields.file_type.validate(file_type)
                 data['success'] = True
             elif duration is not None:
-                media.duration = duration = fields.duration.validate(duration)
+                media.duration = fields.duration.validate(duration)
                 data['success'] = True
                 data['duration'] = helpers.duration_from_seconds(media.duration)
             elif width_height is not None:
@@ -440,7 +434,8 @@ class MediaController(BaseController):
                 file.storage.delete(file.unique_id)
                 DBSession.delete(file)
                 DBSession.flush()
-                media = fetch_row(Media, id)
+                # media.files must be updated to reflect the file deletion above
+                DBSession.refresh(media)
                 data['success'] = True
             else:
                 data['message'] = _('No action to perform.')
@@ -462,6 +457,7 @@ class MediaController(BaseController):
 
     @expose('json', request_method='POST')
     @autocommit
+    @observable(events.Admin.MediaController.merge_stubs)
     def merge_stubs(self, orig_id, input_id, **kwargs):
         """Merge in a newly created media item.
 
@@ -550,7 +546,7 @@ class MediaController(BaseController):
 
 
     @expose('json', request_method='POST')
-    @validate(thumb_form, error_handler=edit)
+    @validate(thumb_form, error_handler=json_error)
     @autocommit
     @observable(events.Admin.MediaController.save_thumb)
     def save_thumb(self, id, thumb, **kwargs):
@@ -573,7 +569,7 @@ class MediaController(BaseController):
         """
         if id == 'new':
             media = Media()
-            user = request.environ['repoze.who.identity']['user']
+            user = request.perm.user
             media.author = Author(user.display_name, user.email_address)
             media.title = os.path.basename(thumb.filename)
             media.slug = get_available_slug(Media, '_stub_' + media.title)
@@ -594,7 +590,7 @@ class MediaController(BaseController):
             if e.errno == 13:
                 message = _('Permission denied, cannot write file')
             elif e.message == 'cannot identify image file':
-                message = _('Unsupport image type: %s') \
+                message = _('Unsupported image type: %s') \
                     % os.path.splitext(thumb.filename)[1].lstrip('.')
             elif e.message == 'cannot read interlaced PNG files':
                 message = _('Interlaced PNGs are not supported.')
@@ -619,7 +615,7 @@ class MediaController(BaseController):
     @validate(update_status_form, error_handler=edit)
     @autocommit
     @observable(events.Admin.MediaController.update_status)
-    def update_status(self, id, status=None, publish_on=None, **values):
+    def update_status(self, id, status=None, publish_on=None, publish_until=None, **values):
         """Update the publish status for the given media.
 
         :param id: Media ID
@@ -630,6 +626,9 @@ class MediaController(BaseController):
         :param publish_on: A date to set to
             :attr:`~mediacore.model.media.Media.publish_on`
         :type publish_on: :class:`datetime.datetime` or ``None``
+        :param publish_until: A date to set to
+            :attr:`~mediacore.model.media.Media.publish_until`
+        :type publish_until: :class:`datetime.datetime` or ``None``
         :rtype: JSON dict
         :returns:
             success
@@ -652,6 +651,8 @@ class MediaController(BaseController):
         elif publish_on:
             media.publish_on = publish_on
             media.update_popularity()
+        elif publish_until:
+            media.publish_until = publish_until
 
         # Verify the change is valid by re-determining the status
         media.update_status()
@@ -671,6 +672,7 @@ class MediaController(BaseController):
 
     @expose('json', request_method='POST')
     @autocommit
+    @observable(events.Admin.MediaController.bulk)
     def bulk(self, type=None, ids=None, **kwargs):
         """Perform bulk operations on media items
 
@@ -728,7 +730,7 @@ class MediaController(BaseController):
     def _delete_media(self, media):
         # FIXME: Ensure that if the first file is deleted from the file system,
         #        then the second fails, the first file is deleted from the
-        #        and not not linking to a nonexistent file.
+        #        file system and not linking to a nonexistent file.
         # Delete every file from the storage engine
         for file in media.files:
             file.storage.delete(file.unique_id)

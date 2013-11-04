@@ -1,30 +1,21 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
-import logging
-import simplejson
-
-from cgi import parse_qsl
+from datetime import datetime
 from itertools import izip
+import logging
 from urllib import urlencode
-from urlparse import urlsplit, urlunsplit
 
 from pylons import request
 
 from genshi.builder import Element
 from genshi.core import Markup
+import simplejson
+from sqlalchemy import sql
 
 from mediacore.forms.admin import players as player_forms
 from mediacore.lib.compat import any
@@ -34,10 +25,8 @@ from mediacore.lib.templating import render
 from mediacore.lib.thumbnails import thumb_url
 from mediacore.lib.uri import pick_uris
 from mediacore.lib.util import url_for
-#from mediacore.model.players import fetch_players XXX: Import at EOF
 from mediacore.plugin.abc import AbstractClass, abstractmethod, abstractproperty
 
-# from mediacore.model import Vote XXX: Import at EOF
 
 from mediacore.lib.util import check_user_authentication
 
@@ -155,6 +144,27 @@ class AbstractPlayer(AbstractClass):
 
         """
         return pick_uris(self.uris, **kwargs)
+    
+    @classmethod
+    def inject_in_db(cls, enable_player=False):
+        from mediacore.model import DBSession
+        from mediacore.model.players import players as players_table, PlayerPrefs
+        
+        prefs = PlayerPrefs()
+        prefs.name = cls.name
+        prefs.enabled = enable_player
+        # didn't get direct SQL expression to work with SQLAlchemy
+        # player_table = sql.func.max(player_table.c.priority)
+        query = sql.select([sql.func.max(players_table.c.priority)])
+        max_priority = DBSession.execute(query).first()[0]
+        if max_priority is None:
+            max_priority = -1
+        prefs.priority = max_priority + 1
+        prefs.created_on = datetime.now()
+        prefs.modified_on = datetime.now()
+        prefs.data = cls.default_data
+        DBSession.add(prefs)
+        DBSession.commit()
 
 ###############################################################################
 
@@ -283,7 +293,7 @@ class FlowPlayer(AbstractFlashPlayer):
 
     def swf_url(self):
         """Return the flash player URL."""
-        return url_for('/scripts/third-party/flowplayer-3.2.3.swf',
+        return url_for('/scripts/third-party/flowplayer/flowplayer-3.2.14.swf',
                        qualified=self.qualified)
 
     def flashvars(self):
@@ -336,7 +346,7 @@ class AbstractEmbedPlayer(AbstractPlayer):
 
     For example, :meth:`mediacore.lib.storage.YoutubeStorage.get_uris`
     returns URIs with a scheme of `'youtube'`, and the special
-    :class:`YoutubeFlashPlayer` would overload :attr:`scheme` to also be
+    :class:`YoutubePlayer` would overload :attr:`scheme` to also be
     `'youtube'`. This would allow the Youtube player to play only those URIs.
 
     """
@@ -479,7 +489,7 @@ class DailyMotionEmbedPlayer(AbstractIframeEmbedPlayer):
 AbstractIframeEmbedPlayer.register(DailyMotionEmbedPlayer)
 
 
-class YoutubeFlashPlayer(AbstractFlashEmbedPlayer):
+class YoutubePlayer(AbstractIframeEmbedPlayer):
     """
     YouTube Player
 
@@ -496,38 +506,65 @@ class YoutubeFlashPlayer(AbstractFlashEmbedPlayer):
     scheme = u'youtube'
     """The `StorageURI.scheme` which uniquely identifies this embed type."""
 
-    settings_form_class = player_forms.YoutubeFlashPlayerPrefsForm
+    settings_form_class = player_forms.YoutubePlayerPrefsForm
     """An optional :class:`mediacore.forms.admin.players.PlayerPrefsForm`."""
 
     default_data = {
+        'version': 3,
         'disablekb': 0,
+        'autohide': 2,
+        'autoplay': 0,
+        'iv_load_policy': 1,
+        'modestbranding': 1,
         'fs': 1,
         'hd': 0,
+        'showinfo': 0,
         'rel': 0,
         'showsearch': 0,
-        'showinfo': 0,
-        'autohide': 0,
+        'wmode': 0,
     }
-
     _height_diff = 25
 
-    def swf_url(self):
-        """Return the flash player URL."""
-        url = str(self.uris[0])
-        if '?' in url:
-            # Add in our query string params to the ones that are there
-            scheme, netloc, path, query, fragment = urlsplit(url)
-            query_dict = dict(parse_qsl(query))
-            query_dict.update(self.data)
-            query = urlencode(query_dict)
-            url = urlunsplit((scheme, netloc, path, query, fragment))
-        else:
-            # Shortcut for adding our query params when there aren't any yet
-            url += '?' + urlencode(self.data)
-        return url
+    def render_markup(self, error_text=None):
+        """Render the XHTML markup for this player instance.
+
+        :param error_text: Optional error text that should be included in
+            the final markup if appropriate for the player.
+        :rtype: ``unicode`` or :class:`genshi.core.Markup`
+        :returns: XHTML that will not be escaped by Genshi.
+
+        """
+        uri = self.uris[0]
+        
+        data = self.data.copy()
+        wmode = data.pop('wmode', 0)
+        if wmode:
+            # 'wmode' is subject to a lot of myths and half-true statements, 
+            # these are the best resources I could find:
+            # http://stackoverflow.com/questions/886864/differences-between-using-wmode-transparent-opaque-or-window-for-an-embed
+            # http://kb2.adobe.com/cps/127/tn_12701.html#main_Using_Window_Mode__wmode__values_
+            data['wmode'] = 'opaque'
+        data_qs = urlencode(data)
+        iframe_attrs = dict(
+            frameborder=0,
+            width=self.adjusted_width,
+            height=self.adjusted_height,
+        )
+        if bool(data.get('fs')):
+            iframe_attrs.update(dict(
+                allowfullscreen='',
+                # non-standard attributes, required to enable YouTube's HTML5 
+                # full-screen capabilities
+                mozallowfullscreen='',
+                webkitallowfullscreen='',
+            ))
+        tag = Element('iframe', src='%s?%s' % (uri, data_qs), **iframe_attrs)
+        if error_text:
+            tag(error_text)
+        return tag
 
 
-AbstractFlashEmbedPlayer.register(YoutubeFlashPlayer)
+AbstractIframeEmbedPlayer.register(YoutubePlayer)
 
 
 class GoogleVideoFlashPlayer(AbstractFlashEmbedPlayer):
@@ -755,7 +792,7 @@ class JWPlayer(AbstractHTML5Player):
                        qualified=self.qualified)
 
     def js_url(self):
-        return url_for('/scripts/third-party/jw_player/jwplayer.js',
+        return url_for('/scripts/third-party/jw_player/jwplayer.min.js',
                        qualified=self.qualified)
 
     def player_vars(self):
@@ -926,6 +963,24 @@ class iTunesPlayer(FileSupportMixin, AbstractPlayer):
 
 ###############################################################################
 
+def preferred_player_for_media(media, **kwargs):
+    uris = media.get_uris()
+
+    from mediacore.model.players import fetch_enabled_players
+    # Find the first player that can play any uris
+    for player_cls, player_data in fetch_enabled_players():
+        can_play = player_cls.can_play(uris)
+        if any(can_play):
+            break
+    else:
+        return None
+
+    # Grab just the uris that the chosen player can play
+    playable_uris = [uri for uri, plays in izip(uris, can_play) if plays]
+    kwargs['data'] = player_data
+    return player_cls(media, playable_uris, **kwargs)
+
+
 def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
                  show_download=False, show_embed=False, show_playerbar=True,
                  show_popout=True, show_resize=False, show_share=True,
@@ -958,6 +1013,7 @@ def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
     """
     # we have to check if current user is anonymous or authenticated
     userid = check_user_authentication(request)
+    from mediadrop.model import Vote
     # check if current user has already voted this media object
     votes = Vote.query.get_votes(media_id=media.id, user_name = userid)
 
@@ -983,7 +1039,7 @@ def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
     return render('players/html5_or_flash.html', {
         'player': player,
         'media': media,
-        'uris': uris,
+        'uris': media.get_uris(),
         'is_widescreen': is_widescreen,
         'js_init': js_init,
         'show_like': show_like,
@@ -992,7 +1048,7 @@ def media_player(media, is_widescreen=False, show_like=True, show_dislike=True,
         'show_embed': show_embed,
         'show_playerbar': show_playerbar,
         'show_popout': show_popout,
-        'show_resize': show_resize and player.supports_resizing,
+        'show_resize': show_resize and (player and player.supports_resizing),
         'show_share': show_share,
     })
 
@@ -1015,6 +1071,7 @@ def pick_any_media_file(media):
     :returns: A :class:`~mediacore.model.media.MediaFile` object or None
     """
     uris = media.get_uris()
+    from mediacore.model.players import fetch_enabled_players
     for player_cls, player_data in fetch_enabled_players():
         for i, plays in enumerate(player_cls.can_play(uris)):
             if plays:
@@ -1029,6 +1086,7 @@ def update_enabled_players():
     enabled player that supports that format. Call this method after changing
     the set of enabled players, to ensure encoding statuses are up to date.
     """
+    from mediacore.model import DBSession, Media
     media = DBSession.query(Media)
     for m in media:
         m.update_status()
@@ -1047,9 +1105,11 @@ def embed_iframe(media, width=400, height=225, frameborder=0, **kwargs):
                   qualified=True)
     tag = Element('iframe', src=src, width=width, height=height,
                   frameborder=frameborder, **kwargs)
+    # some software is known not to work with self-closing iframe tags 
+    # ('<iframe ... />'). Several WordPress instances are affected as well as
+    # TWiki http://mediadrop.net/community/topic/embed-iframe-closing-tag
+    tag.append('')
     return tag
 
 embed_player = embed_iframe
 
-from mediacore.model.players import fetch_enabled_players
-from mediacore.model import DBSession, Media, Vote

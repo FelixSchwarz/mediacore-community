@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2010 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 from formencode.validators import Int
 
@@ -22,8 +14,10 @@ from mediacore.lib.storage.ftp import (FTP_SERVER,
     FTP_USERNAME, FTP_PASSWORD,
     FTP_UPLOAD_DIR, FTP_MAX_INTEGRITY_RETRIES,
     HTTP_DOWNLOAD_URI, RTMP_SERVER_URI)
+from mediacore.plugin import events
 
 class FTPStorageForm(StorageForm):
+    event = events.Admin.Storage.FTPStorageForm
 
     fields = StorageForm.fields + [
         ListFieldSet('ftp',
@@ -34,7 +28,7 @@ class FTPStorageForm(StorageForm):
                 TextField('user', label_text=N_('Username')),
                 TextField('password', label_text=N_('Password')),
                 TextField('upload_dir', label_text=N_('Subdirectory on server to upload to')),
-                TextField('upload_integrity_retries', label_text=N_('How many times should MediaCore try to verify the FTP upload before declaring it a failure?'), validator=Int()),
+                TextField('upload_integrity_retries', label_text=N_('How many times should MediaDrop try to verify the FTP upload before declaring it a failure?'), validator=Int()),
                 TextField('http_download_uri', label_text=N_('HTTP URL to access remotely stored files')),
                 TextField('rtmp_server_uri', label_text=N_('RTMP Server URL to stream remotely stored files (Optional)')),
             ]

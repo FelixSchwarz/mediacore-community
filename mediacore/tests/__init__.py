@@ -1,3 +1,10 @@
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
+# (at your option) any later version.
+# See LICENSE.txt in the main project directory, for more information.
+
 """Pylons application test package
 
 This package assumes the Pylons environment is already loaded, such as
@@ -25,11 +32,12 @@ __all__ = [
 ]
 
 # Invoke websetup with the current config file
-SetupCommand('setup-app').run([pylons.test.pylonsapp.config['__file__']])
+#SetupCommand('setup-app').run([pylons.test.pylonsapp.config['__file__']])
 
 environ = {}
 
 class TestController(TestCase):
+    __test__ = False
 
     def __init__(self, *args, **kwargs):
         wsgiapp = pylons.test.pylonsapp

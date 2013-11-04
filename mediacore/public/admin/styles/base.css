@@ -1,20 +1,18 @@
 /**
- * This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
- *
- * MediaCore is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * This file is a part of MediaDrop (http://www.mediadrop.net),
+ * Copyright 2009-2013 MediaDrop contributors
+ * For the exact contribution history, see the git revision log.
+ * The source code contained in this file is licensed under the GPLv3 or
  * (at your option) any later version.
- *
- * MediaCore is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-/* YUI Resets & Fonts 2.7.0: Copyright (c) 2009, Yahoo! Inc. All rights reserved. Code licensed under the BSD License: http://developer.yahoo.net/yui/license.txt */
+ * See LICENSE.txt in the main project directory, for more information.
+ **/
+
+
+/* The following block contains resets and fonts from YUI Resets & Fonts 2.7.0
+ * Copyright (c) 2009, Yahoo! Inc. All rights reserved.
+ * Code licensed under the BSD License:
+ * http://developer.yahoo.net/yui/license.txt
+ * BEGIN YUI RESETS */
 html{color:#000}
 body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,code,form,fieldset,legend,input,button,textarea,p,blockquote,th,td{margin:0;padding:0}
 fieldset,img{border:0}
@@ -33,6 +31,8 @@ body{font:13px/1.231 'helvetica neue',arial,helvetica,clean,sans-serif;*font-siz
 select,input,button,textarea,button{font:99% arial,helvetica,clean,sans-serif}
 table{font-size:inherit;font:100%}
 pre,code,kbd,samp,tt{font-family:monospace;*font-size:108%;line-height:100%}
+/* END YUI resets */
+
 
 /* Generic Styles */
 p {
@@ -132,12 +132,20 @@ body {
 #logo-dropdown li:first-child a { background-position: -1px -42px; height: 36px; line-height: 36px }
 #logo-dropdown li:first-child a:hover { background-position: -1px -1px }
 
-.copyright {
-	text-align: right;
+
+#admin-footer {
 	color: #95a0b9;
 	font-size: 11px;
 	padding-bottom: 0;
 	margin-bottom: 0;
+}
+
+.mcore-version {
+    float: left;
+}
+
+.copyright {
+	text-align: right;
 }
 
 /* Main Menu */
@@ -642,6 +650,11 @@ textarea {
 }
 input[type="radio"] {
 	width: 15px;
+}
+/* in Chrome 17 checkboxes in a simple CheckBoxList in the admin would 
+ * otherwise span two lines because of 'width: 100%' for 'input' above. */
+input[type="checkbox"] {
+	width: auto;
 }
 input.filefield { width: auto; }
 input:focus, textarea:focus {

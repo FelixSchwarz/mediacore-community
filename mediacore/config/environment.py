@@ -1,23 +1,16 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 """Pylons environment configuration"""
+
 import os
-import re
 
 from formencode.api import get_localedir as get_formencode_localedir
 from genshi.filters.i18n import Translator
+import pylons
 from pylons import translator
 from pylons.configuration import PylonsConfig
 from sqlalchemy import engine_from_config
@@ -25,11 +18,9 @@ from sqlalchemy import engine_from_config
 import mediacore.lib.app_globals as app_globals
 import mediacore.lib.helpers
 
-from mediacore.config.routing import make_map
-from mediacore.lib.auth import classifier_for_flash_uploads
+from mediacore.config.routing import create_mapper, add_routes
 from mediacore.lib.templating import TemplateLoader
 from mediacore.model import Media, Podcast, init_model
-from mediacore.model.meta import DBSession
 from mediacore.plugin import PluginManager, events
 
 def load_environment(global_conf, app_conf):
@@ -49,8 +40,10 @@ def load_environment(global_conf, app_conf):
     # Initialize the plugin manager to load all active plugins
     plugin_mgr = PluginManager(config)
 
-    mapper = make_map(config, plugin_mgr.controller_scan)
-    events.Environment.routes(mapper)
+    mapper = create_mapper(config, plugin_mgr.controller_scan)
+    events.Environment.before_route_setup(mapper)
+    add_routes(mapper)
+    events.Environment.after_route_setup(mapper)
     config['routes.map'] = mapper
     config['pylons.app_globals'] = app_globals.Globals(config)
     config['pylons.app_globals'].plugin_mgr = plugin_mgr
@@ -58,7 +51,6 @@ def load_environment(global_conf, app_conf):
     config['pylons.h'] = mediacore.lib.helpers
 
     # Setup cache object as early as possible
-    import pylons
     pylons.cache._push_object(config['pylons.app_globals'].cache)
 
     config['locale_dirs'] = plugin_mgr.locale_dirs()

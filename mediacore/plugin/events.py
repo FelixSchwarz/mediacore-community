@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 """
 Abstract events which plugins subscribe to and are called by the app.
 """
@@ -19,6 +11,9 @@ from collections import deque
 import logging
 
 from sqlalchemy.orm.interfaces import MapperExtension
+
+
+__all__ = ['Event', 'GeneratorEvent', 'FetchFirstResultEvent', 'observes']
 
 log = logging.getLogger(__name__)
 
@@ -29,13 +24,19 @@ class Event(object):
         >>> e = Event()
         >>> e.observers.append(lambda x: x)
         >>> e('x')
-
     """
-    def __init__(self, args):
+    def __init__(self, args=()):
         self.args = args and tuple(args) or None
-        self.observers = deque()
+        self.pre_observers = deque()
+        self.post_observers = deque()
+    
+    @property
+    def observers(self):
+        return tuple(self.pre_observers) + tuple(self.post_observers)
 
     def __call__(self, *args, **kwargs):
+        # This is helpful for events which are triggered explicitly in the code
+        # (e.g. Environment.loaded)
         for observer in self.observers:
             observer(*args, **kwargs)
 
@@ -46,10 +47,24 @@ class GeneratorEvent(Event):
     """
     An arbitrary event that yields all results from all observers.
     """
+    def is_list_like(self, value):
+        if isinstance(value, basestring):
+            return False
+        try:
+            iter(value)
+        except TypeError:
+            return False
+        return True
+    
     def __call__(self, *args, **kwargs):
         for observer in self.observers:
-            for result in observer(*args, **kwargs):
+            result = observer(*args, **kwargs)
+            if self.is_list_like(result):
+                for item in result:
+                    yield item
+            else:
                 yield result
+
 
 class FetchFirstResultEvent(Event):
     """
@@ -57,7 +72,7 @@ class FetchFirstResultEvent(Event):
     """
     def __call__(self, *args, **kwargs):
         for observer in self.observers:
-            result = observer(**kwargs)
+            result = observer(*args, **kwargs)
             if result is not None:
                 return result
         return None
@@ -68,14 +83,22 @@ class observes(object):
     """
     def __init__(self, *events, **kwargs):
         self.events = events
-        self.appendleft = kwargs.get('appendleft', False)
+        self.appendleft = kwargs.pop('appendleft', False)
+        self.run_before = kwargs.pop('run_before', False)
+        if kwargs:
+            first_key = list(kwargs)[0]
+            raise TypeError('TypeError: observes() got an unexpected keyword argument %r' % first_key)
 
     def __call__(self, func):
         for event in self.events:
+            observers = event.post_observers
+            if self.run_before:
+                observers = event.pre_observers
+            
             if self.appendleft:
-                event.observers.appendleft(func)
+                observers.appendleft(func)
             else:
-                event.observers.append(func)
+                observers.append(func)
         return func
 
 class MapperObserver(MapperExtension):
@@ -107,9 +130,23 @@ class MapperObserver(MapperExtension):
 # Application Setup
 
 class Environment(object):
+    before_route_setup = Event(['mapper'])
+    after_route_setup = Event(['mapper'])
+    # TODO: deprecation warning
+    routes = after_route_setup
+    
     routes = Event(['mapper'])
     init_model = Event([])
     loaded = Event(['config'])
+    
+    # fires when a new database was initialized (tables created)
+    database_initialized = Event([])
+    
+    # an existing database was migrated to a newer DB schema
+    database_migrated = Event([])
+    
+    # the environment has been loaded, the database is ready to use
+    database_ready = Event([])
 
 ###############################################################################
 # Controllers
@@ -118,6 +155,7 @@ class Admin(object):
 
     class CategoriesController(object):
         index = Event(['**kwargs'])
+        bulk = Event(['**kwargs'])
         edit = Event(['**kwargs'])
         save = Event(['**kwargs'])
 
@@ -131,6 +169,7 @@ class Admin(object):
         media_table = Event(['**kwargs'])
 
     class MediaController(object):
+        bulk = Event(['type=None, ids=None, **kwargs'])
         index = Event(['**kwargs'])
         edit = Event(['**kwargs'])
         save = Event(['**kwargs'])
@@ -150,6 +189,7 @@ class Admin(object):
         index = Event(['**kwargs'])
         edit = Event(['**kwargs'])
         save = Event(['**kwargs'])
+        bulk = Event(['**kwargs'])
 
     class UsersController(object):
         index = Event(['**kwargs'])
@@ -162,6 +202,63 @@ class Admin(object):
         edit = Event(['**kwargs'])
         save = Event(['**kwargs'])
 
+    class GroupsController(object):
+        index = Event(['**kwargs'])
+        edit = Event(['**kwargs'])
+        save = Event(['**kwargs'])
+        delete = Event(['**kwargs'])
+    
+    class Players(object):
+        HTML5OrFlashPrefsForm = Event(['form'])
+        SublimePlayerPrefsForm = Event(['form'])
+        YoutubeFlashPlayerPrefsForm = Event(['form'])
+    
+    class PlayersController(object):
+        delete = Event(['**kwargs'])
+        disable = Event(['**kwargs'])
+        edit = Event(['**kwargs'])
+        enable = Event(['**kwargs'])
+        index = Event(['**kwargs'])
+        reorder = Event(['**kwargs'])
+    
+    class Settings(object):
+        AdvertisingForm = Event(['form'])
+        AnalyticsForm = Event(['form'])
+        APIForm = Event(['form'])
+        AppearanceForm = Event(['form'])
+        CommentsForm = Event(['form'])
+        GeneralForm = Event(['form'])
+        NotificationsForm = Event(['form'])
+        PopularityForm = Event(['form'])
+        SiteMapsForm = Event(['form'])
+        UploadForm = Event(['form'])
+    
+    class SettingsController(object):
+        advertising_save = Event(['**kwargs'])
+        analytics_save = Event(['**kwargs'])
+        appearance_save = Event(['**kwargs'])
+        comments_save = Event(['**kwargs'])
+        general_save = Event(['**kwargs'])
+        notifications_save = Event(['**kwargs'])
+        popularity_save = Event(['**kwargs'])
+        # probably this event will be renamed to 'api_save' in a future version
+        save_api = Event(['**kwargs'])
+        sitemaps_save = Event(['**kwargs'])
+        upload_save = Event(['**kwargs'])
+    
+    class Storage(object):
+        LocalFileStorageForm = Event(['form'])
+        FTPStorageForm = Event(['form'])
+        RemoteURLStorageForm = Event(['form'])
+    
+    class StorageController(object):
+        delete = Event(['**kwargs'])
+        disable = Event(['**kwargs'])
+        edit = Event(['**kwargs'])
+        enable = Event(['**kwargs'])
+        index = Event(['**kwargs'])
+
+
 class API(object):
     class MediaController(object):
         index = Event(['**kwargs'])
@@ -170,6 +267,10 @@ class API(object):
 class CategoriesController(object):
     index = Event(['**kwargs'])
     more = Event(['**kwargs'])
+    # feed observers (if they are not marked as "run_before=True") must support
+    # pure string output (from beaker cache) instead of a dict with template
+    # variables.
+    feed = Event(['limit', '**kwargs'])
 
 class ErrorController(object):
     document = Event(['**kwargs'])
@@ -196,6 +297,14 @@ class PodcastsController(object):
     view = Event(['**kwargs'])
     feed = Event(['**kwargs'])
 
+class SitemapsController(object):
+    # observers (if they are not marked as "run_before=True") must support pure 
+    # string output (from beaker cache) instead of a dict with template variables.
+    google = Event(['page', 'limit', '**kwargs'])
+    mrss = Event(['**kwargs'])
+    latest = Event(['limit', 'skip', '**kwargs'])
+    featured = Event(['limit', 'skip', '**kwargs'])
+
 class UploadController(object):
     index = Event(['**kwargs'])
     submit = Event(['**kwargs'])
@@ -213,6 +322,10 @@ class Media(object):
     after_insert = Event(['instance'])
     before_update = Event(['instance'])
     after_update = Event(['instance'])
+    
+    # event is triggered when the encoding status changes from 'not encoded' to
+    # 'encoded'
+    encoding_done = Event(['instance'])
 
 class MediaFile(object):
     before_delete = Event(['instance'])
@@ -291,6 +404,7 @@ class Vote(object):
 
 PostCommentForm = Event(['form'])
 UploadForm = Event(['form'])
+LoginForm = Event(['form'])
 Admin.CategoryForm = Event(['form'])
 Admin.CategoryRowForm = Event(['form'])
 Admin.EditCommentForm = Event(['form'])
@@ -302,6 +416,7 @@ Admin.SearchForm = Event(['form'])
 Admin.PodcastForm = Event(['form'])
 Admin.PodcastFilterForm = Event(['form'])
 Admin.UserForm = Event(['form'])
+Admin.GroupForm = Event(['form'])
 Admin.TagForm = Event(['form'])
 Admin.TagRowForm = Event(['form'])
 Admin.ThumbForm = Event(['form'])

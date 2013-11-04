@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 import logging
 import os
@@ -21,13 +13,19 @@ from gettext import NullTranslations, translation as gettext_translation
 from babel.core import Locale
 from babel.dates import (format_date as _format_date,
     format_datetime as _format_datetime, format_time as _format_time)
+from babel.numbers import format_decimal as _format_decimal
+from babel.util import LOCALTZ
 from pylons import config, request, translator
 from pylons.i18n.translation import lazify
+
+
+__all__ = ['_', 'N_', 'format_date', 'format_datetime', 'format_decimal',
+    'format_time']
 
 log = logging.getLogger(__name__)
 
 MEDIACORE = 'mediacore'
-"""The primary MediaCore domain name."""
+"""The primary MediaDrop domain name."""
 
 class LanguageError(Exception):
     pass
@@ -285,7 +283,19 @@ def format_datetime(datetime=None, format='medium', tzinfo=None):
     :param tzinfo: the timezone to apply to the time for display
     :rtype: `unicode`
     """
+    if datetime and (datetime.tzinfo is None):
+        datetime = datetime.replace(tzinfo=LOCALTZ)
     return _format_datetime(datetime, format, tzinfo, translator.locale)
+
+def format_decimal(number):
+    """Return a formatted number (using the correct decimal mark).
+
+    This uses the locale of the current request's ``pylons.translator``.
+
+    :param number: the ``int``, ``float`` or ``decimal`` object
+    :rtype: `unicode`
+    """
+    return _format_decimal(number, locale=translator.locale)
 
 def format_time(time=None, format='medium', tzinfo=None):
     """Return a time formatted according to the given pattern.
@@ -299,6 +309,8 @@ def format_time(time=None, format='medium', tzinfo=None):
     :param tzinfo: the time-zone to apply to the time for display
     :rtype: `unicode`
     """
+    if time and (time.tzinfo is None):
+        time = time.replace(tzinfo=LOCALTZ)
     return _format_time(time, format, tzinfo, translator.locale)
 
 def get_available_locales():

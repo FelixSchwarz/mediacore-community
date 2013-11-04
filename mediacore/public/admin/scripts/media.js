@@ -1,19 +1,12 @@
 /**
- * This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
- *
- * MediaCore is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * This file is a part of MediaDrop (http://www.mediadrop.net),
+ * Copyright 2009-2013 MediaDrop contributors
+ * For the exact contribution history, see the git revision log.
+ * The source code contained in this file is licensed under the GPLv3 or
  * (at your option) any later version.
- *
- * MediaCore is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+ * See LICENSE.txt in the main project directory, for more information.
+ **/
+
 var MediaManager = new Class({
 
 	Implements: [Events],
@@ -190,9 +183,11 @@ var StatusForm = new Class({
 		form: '',
 		error: '',
 		submitReq: {noCache: true},
-		pickerField: 'publish_on',
+		publishPickerField: 'publish_on',
+		publishToggleOn: 'status-publish',
+		expiryPickerField: 'publish_until',
+		expiryToggleOn: 'status-expiry',
 		pickerOptions: {
-			toggle: 'status-publish',
 			yearPicker: false,
 			timePicker: true,
 			allowEmpty: true,
@@ -205,22 +200,41 @@ var StatusForm = new Class({
 	form: null,
 	submitReq: null,
 	publishDatePicker: null,
+	expiryDatePicker: null,
 
 	initialize: function(opts){
 		this.setOptions(opts);
 		this.form = $(this.options.form).addEvent('submit', this.saveStatus.bind(this));
-		this.attachDatePicker();
+		this.attachDatePickers();
 	},
-
-	attachDatePicker: function(){
-		var toggle = $(this.options.pickerOptions.toggle);
-		if (!toggle) return;
-		if (this.publishDatePicker == null) {
-			this.publishDatePicker = new DatePicker(this.options.pickerField, this.options.pickerOptions)
-				.addEvent('select', this.changePublishDate.bind(this));
-		} else {
-			this.publishDatePicker.attach(this.options.pickerField, toggle);
-		}
+    
+    attachDatePickers: function() {
+        this.attachPublishDatePicker();
+        this.attachExpiryDatePicker();
+    },
+    
+	attachPublishDatePicker: function() {
+	    var toggleID = this.options.publishToggleOn;
+	    this.publishDatePicker = this.attachDatePicker(this.publishDatePicker, 
+	        this.options.publishPickerField, toggleID, this.changePublishDate);
+	},
+	
+	attachExpiryDatePicker: function() {
+	    var toggleID = this.options.expiryToggleOn;
+	    this.expiryDatePicker = this.attachDatePicker(this.expiryDatePicker, 
+	        this.options.expiryPickerField, toggleID, this.changeExpiryDate);
+	},
+	
+	attachDatePicker: function(picker, pickerFieldName, toggleID, selectCallback){
+		var toggle = $(toggleID);
+		if (!toggle) 
+		    return picker;
+	    if (picker === null) {
+	        this.options.pickerOptions.toggle = toggleID;
+	        return new DatePicker(pickerFieldName, this.options.pickerOptions)
+				.addEvent('select', selectCallback.bind(this))
+	    }
+	    return picker.attach(pickerFieldName, toggle);
 	},
 
 	saveStatus: function(e){
@@ -248,7 +262,7 @@ var StatusForm = new Class({
 		}
 		var formContents = $(form).getChildren();
 		this.form.empty().adopt(formContents);
-		this.attachDatePicker();
+		this.attachDatePickers();
 		this.fireEvent('update', [this.form, json]);
 	},
 
@@ -269,6 +283,18 @@ var StatusForm = new Class({
 		}).send(new Hash({
 			publish_on: publishDate,
 			update_button: 'Change publish date'
+		}).toQueryString());
+	},
+	
+	changeExpiryDate: function(d) {
+		var expiryDate = d.format(this.options.pickerOptions.format);
+		$(this.expiryDatePicker.options.toggle).getFirst().set('text', expiryDate);
+		
+		var r = new Request.JSON({
+			url: this.form.get('action')
+		}).send(new Hash({
+			publish_until: expiryDate,
+			update_button: 'Change expiry date'
 		}).toQueryString());
 	},
 

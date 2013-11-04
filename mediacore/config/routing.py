@@ -1,17 +1,10 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
+
 """Routes configuration
 
 The more specific and detailed routes should be defined first so they
@@ -27,14 +20,16 @@ logout_handler_url = '/logout'
 post_login_url = '/login/continue'
 post_logout_url = '/logout/continue'
 
-def make_map(config, controller_scan=controller_scan):
+def create_mapper(config, controller_scan=controller_scan):
     """Create, configure and return the routes Mapper"""
     map = Mapper(controller_scan=controller_scan,
                  directory=config['pylons.paths']['controllers'],
                  always_scan=config['debug'])
     map.explicit = False
     map.minimization = True # TODO: Rework routes so we can set this to False
+    return map
 
+def add_routes(map):
     #################
     # Public Routes #
     #################
@@ -122,7 +117,7 @@ def make_map(config, controller_scan=controller_scan):
     # Auth Routes #
     ###############
 
-    # XXX: These URLs are hardcoded into mediacore/templates/login.html
+    # XXX: These URLs are also hardcoded at the top of this file
     # This file is initialized by the auth middleware before routing helper
     # methods (ie pylons.url) are available.
     map.connect(login_form_url, controller='login', action='login')
@@ -161,6 +156,14 @@ def make_map(config, controller_scan=controller_scan):
         action='index')
     map.connect('/admin/users/{id}/{action}',
         controller='admin/users',
+        action='edit',
+        requirements={'id': r'(\d+|new)'})
+    
+    map.connect('/admin/groups',
+        controller='admin/groups',
+        action='index')
+    map.connect('/admin/groups/{id}/{action}',
+        controller='admin/groups',
         action='edit',
         requirements={'id': r'(\d+|new)'})
 

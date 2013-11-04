@@ -1,17 +1,10 @@
-<!--! This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-
-	MediaCore is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	MediaCore is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+<!--!
+This file is a part of MediaDrop (http://www.mediadrop.net),
+Copyright 2009-2013 MediaDrop contributors
+For the exact contribution history, see the git revision log.
+The source code contained in this file is licensed under the GPLv3 or
+(at your option) any later version.
+See LICENSE.txt in the main project directory, for more information.
 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -19,18 +12,8 @@
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:i18n="http://genshi.edgewall.org/i18n"
       xmlns:xi="http://www.w3.org/2001/XInclude"
+      i18n:domain="mediacore"
       py:strip="">
-
-<?python feed_links = [] ?>
-
-<head py:match="head">
-	<link py:match="link" py:attrs="select('@*')"><?python
-		attrs = h.attrs_to_dict(select('@*'))
-		if attrs.get('type') == 'application/rss+xml':
-			feed_links.append((attrs['href'], attrs['title']))
-	?></link>
-	<meta py:replace="select('*|text()')"/>
-</head>
 
 <body py:match="body" py:attrs="select('@*')">
 	${Markup(settings['appearance_custom_header_html'])}
@@ -45,30 +28,40 @@
 
 	<div py:replace="select('*|text()|comment()')">Content is injected here</div>
 
-	<div py:if="settings['appearance_display_mediacore_footer']" id="mcore-foot" class="mediacore-content clear">
+	<div py:if="settings['appearance_display_mediadrop_footer']" id="mcore-foot" class="mediacore-content clear">
 		<div id="mcore-feeds" class="f-lft">
 			<h5>Feeds:</h5>
 			<ul>
-				<li py:for="href, title in feed_links"><a href="${href}" class="mcore-foot-link underline-hover">${title}</a></li>
+				<li py:for="href, title in response.feed_links"><a href="${href}" class="mcore-foot-link underline-hover">${title}</a></li>
 			</ul>
 		</div>
-		<div py:if="settings['appearance_display_mediacore_credits']" id="mcore-credits" class="f-rgt">
-			<a href="http://getmediacore.com/" class="mcore-foot-link underline-hover" i18n:msg=""><strong>MediaCore</strong> <em>video platform</em></a>
+		<div py:if="settings['appearance_display_mediadrop_credits']" id="mcore-credits" class="f-rgt">
+			<a href="http://mediadrop.net" class="mcore-foot-link underline-hover" i18n:msg=""><strong>MediaDrop</strong> <em>video platform</em></a>
 		</div>
 	</div>
 
 	${Markup(settings['appearance_custom_footer_html'])}
 
+	
+    <script type="text/javascript">
+        window.mediadrop = window.mediadrop || {};
+        mediadrop.ie6update = mediadrop.ie6update || {};
+        mediadrop.ie6update.scripts = "${h.url_for('/scripts/third-party/ie6update')}";
+        mediadrop.ie6update.images = "${h.url_for('/images/third-party/ie6update/')}";
+    </script>
 	<!--[if IE 6]>
 		<script type="text/javascript">
 			// Load jQuery if not already loaded
 			if (typeof jQuery == 'undefined') {
-				document.write('<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></'+'script>');
+				document.write('<script type="text/javascript" src="'+mediadrop.ie6update.scripts+'/jquery-1.7.2.min.js"></'+'script>');
 				var __noconflict = true;
 			}
-			var IE6UPDATE_OPTIONS = {icons_path: 'http://static.ie6update.com/hosted/ie6update/images/'}
+			var IE6UPDATE_OPTIONS = {
+			    icons_path: mediadrop.ie6update.images,
+			    message: 'Your version of Internet Explorer is not supported by this site. Click here to update... '
+		    };
+			document.write('<script type="text/javascript" src="'+mediadrop.ie6update.scripts+'/ie6update.js"></'+'script>');
 		</script>
-		<script type="text/javascript" src="http://static.ie6update.com/hosted/ie6update/ie6update.js"></script>
 	<![endif]-->
 </body>
 

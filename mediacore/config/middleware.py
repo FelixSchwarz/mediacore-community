@@ -1,20 +1,14 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+# See LICENSE.txt in the main project directory, for more information.
 """Pylons middleware initialization"""
+
+import logging
 import os
+import threading
 
 from beaker.middleware import SessionMiddleware
 from genshi.template import loader
@@ -30,13 +24,20 @@ from paste.deploy.config import PrefixMiddleware
 from pylons.middleware import ErrorHandler, StatusCodeRedirect
 from pylons.wsgiapp import PylonsApp as _PylonsApp
 from routes.middleware import RoutesMiddleware
+import sqlalchemy
+from sqlalchemy.pool import Pool
+from sqlalchemy.exc import DisconnectionError
 from tw.core.view import EngineManager
 import tw.api
 
 from mediacore import monkeypatch_method
 from mediacore.config.environment import load_environment
 from mediacore.lib.auth import add_auth
-from mediacore.model.meta import DBSession
+from mediacore.migrations.util import MediaDropMigrator
+from mediacore.model import DBSession
+from mediacore.plugin import events
+
+log = logging.getLogger(__name__)
 
 class PylonsApp(_PylonsApp):
     """
@@ -100,7 +101,7 @@ class FastCGIScriptStripperMiddleware(object):
             environ['SCRIPT_NAME'] = script_name[:-self.cut]
         return self.app(environ, start_response)
 
-def setup_tw_middleware(app, config):
+def create_tw_engine_manager(app_globals):
     def filename_suffix_adder(inner_loader, suffix):
         def _add_suffix(filename):
             return inner_loader(filename + suffix)
@@ -110,7 +111,7 @@ def setup_tw_middleware(app, config):
     # from our main template loader.
     tw_engines = EngineManager(extra_vars_func=None)
     tw_engines['genshi'] = MarkupTemplateEnginePlugin()
-    tw_engines['genshi'].loader = config['pylons.app_globals'].genshi_loader
+    tw_engines['genshi'].loader = app_globals.genshi_loader
 
     # Disable the built-in package name template resolution.
     tw_engines['genshi'].use_package_naming = False
@@ -135,13 +136,105 @@ def setup_tw_middleware(app, config):
 
     # Add this path to our global loader
     tw_engines['genshi'].loader.search_path.append(tw_loader)
+    return tw_engines
 
+def setup_tw_middleware(app, config):
+    app_globals = config['pylons.app_globals']
     app = tw.api.make_middleware(app, {
         'toscawidgets.framework': 'pylons',
         'toscawidgets.framework.default_view': 'genshi',
-        'toscawidgets.framework.engines': tw_engines,
+        'toscawidgets.framework.engines': create_tw_engine_manager(app_globals),
     })
     return app
+
+class DBSanityCheckingMiddleware(object):
+    def __init__(self, app, check_for_leaked_connections=False, 
+                 enable_pessimistic_disconnect_handling=False):
+        self.app = app
+        self._thread_local = threading.local()
+        self.is_leak_check_enabled = check_for_leaked_connections
+        self.is_alive_check_enabled = enable_pessimistic_disconnect_handling
+        if self.is_leak_check_enabled or self.is_alive_check_enabled:
+            sqlalchemy.event.listen(Pool, 'checkout', self.on_connection_checkout)
+        if self.is_leak_check_enabled:
+            sqlalchemy.event.listen(Pool, 'checkin', self.on_connection_checkin)
+    
+    def __call__(self, environ, start_response):
+        try:
+            return self.app(environ, start_response)
+        finally:
+            leaked_connections = len(self.connections)
+            if leaked_connections > 0:
+                msg = 'DB connection leakage detected: ' + \
+                    '%d db connection(s) not returned to the pool' % leaked_connections
+                log.error(msg)
+                self.connections.clear()
+    
+    @property
+    def connections(self):
+        if not hasattr(self._thread_local, 'connections'):
+            self._thread_local.connections = dict()
+        return self._thread_local.connections
+    
+    def check_for_live_db_connection(self, dbapi_connection):
+        # Try to check that the current DB connection is usable for DB queries
+        # by issuing a trivial SQL query. It can happen because the user set
+        # the 'sqlalchemy.pool_recycle' time too high or simply because the
+        # MySQL server was restarted in the mean time.
+        # Without this check a user would get an internal server error and the
+        # connection would be reset by the DBSessionRemoverMiddleware at the
+        # end of that request.
+        # This functionality below will prevent the initial "internal server
+        # error".
+        #
+        # This approach is controversial between DB experts. A good blog post
+        # (with an even better discussion highlighting pros and cons) is
+        # http://www.mysqlperformanceblog.com/2010/05/05/checking-for-a-live-database-connection-considered-harmful/
+        #
+        # In MediaDrop the check is only done once per request (skipped for
+        # static files) so it should be relatively light on the DB server.
+        # Also the check can be disabled using the setting
+        # 'sqlalchemy.check_connection_before_request = false'.
+        #
+        # possible optimization: check each connection only once per minute or so,
+        # store last check time in private attribute of connection object.
+        
+        # code stolen from SQLAlchemy's 'Pessimistic Disconnect Handling' docs
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute('SELECT 1')
+        except:
+            msg = u'received broken db connection from pool, resetting db session. ' + \
+                u'If you see this error regularly and you use MySQL please check ' + \
+                u'your "sqlalchemy.pool_recycle" setting (usually it is too high).'
+            log.warning(msg)
+            # The pool will try to connect again up to three times before 
+            # raising an exception itself.
+            raise DisconnectionError()
+        cursor.close()
+    
+    def on_connection_checkout(self, dbapi_connection, connection_record, connection_proxy):
+        if self.is_alive_check_enabled:
+            self.check_for_live_db_connection(dbapi_connection)
+        if self.is_leak_check_enabled:
+            self.connections[id(dbapi_connection)] = True
+    
+    def on_connection_checkin(self, dbapi_connection, connection_record):
+        connection_id = id(dbapi_connection)
+        # connections might be returned *after* this middleware called
+        # 'self.connections.clear()', we should not break in that case...
+        if connection_id in self.connections:
+            del self.connections[connection_id]
+
+
+def setup_db_sanity_checks(app, config):
+    check_for_leaked_connections = asbool(config.get('db.check_for_leaked_connections', False))
+    enable_pessimistic_disconnect_handling = asbool(config.get('db.enable_pessimistic_disconnect_handling', False))
+    if (not check_for_leaked_connections) and (not enable_pessimistic_disconnect_handling):
+        return app
+    
+    return DBSanityCheckingMiddleware(app, check_for_leaked_connections=check_for_leaked_connections,
+                                      enable_pessimistic_disconnect_handling=enable_pessimistic_disconnect_handling)
 
 def setup_gzip_middleware(app, global_conf):
     """Make paste.gzipper middleware with a monkeypatch to exempt SWFs.
@@ -196,6 +289,11 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     """
     # Configure the Pylons environment
     config = load_environment(global_conf, app_conf)
+    alembic_migrations = MediaDropMigrator.from_config(config, log=log)
+    if alembic_migrations.is_db_scheme_current():
+        events.Environment.database_ready()
+    else:
+        log.warn('Running with an outdated database scheme. Please upgrade your database.')
     plugin_mgr = config['pylons.app_globals'].plugin_mgr
 
     # The Pylons WSGI app
@@ -210,8 +308,7 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
 
     # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
 
-    # Set up repoze.what-quickstart authentication:
-    # http://wiki.pylonshq.com/display/pylonscookbook/Authorization+with+repoze.what
+    # add repoze.who middleware with our own authorization library
     app = add_auth(app, config)
 
     # ToscaWidgets Middleware
@@ -231,18 +328,28 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
         # Handle Python exceptions
         app = ErrorHandler(app, global_conf, **config['pylons.errorware'])
 
+        # by default Apache uses  a global alias for "/error" in the httpd.conf
+        # which means that users can not send error reports through MediaDrop's
+        # error page (because that POSTs to /error/report).
+        # To make things worse Apache (at least up to 2.4) has no "unalias"
+        # functionality. So we work around the issue by using the "/errors"
+        # prefix (extra "s" at the end)
+        error_path = '/errors/document'
         # Display error documents for 401, 403, 404 status codes (and
         # 500 when debug is disabled)
         if asbool(config['debug']):
-            app = StatusCodeRedirect(app)
+            app = StatusCodeRedirect(app, path=error_path)
         else:
-            app = StatusCodeRedirect(app, [400, 401, 403, 404, 500])
+            app = StatusCodeRedirect(app, errors=(400, 401, 403, 404, 500),
+                                     path=error_path)
 
     # Cleanup the DBSession only after errors are handled
     app = DBSessionRemoverMiddleware(app)
 
     # Establish the Registry for this application
     app = RegistryManager(app)
+
+    app = setup_db_sanity_checks(app, config)
 
     if asbool(static_files):
         # Serve static files from our public directory

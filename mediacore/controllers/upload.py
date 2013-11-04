@@ -1,30 +1,19 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
-import os
 import simplejson as json
 
-from paste.deploy.converters import asbool
-from pylons import app_globals, config, request, response, session, tmpl_context
+from pylons import request, tmpl_context
 from pylons.controllers.util import abort
 
 from mediacore.forms.uploader import UploadForm
 from mediacore.lib import email
 from mediacore.lib.base import BaseController
-from mediacore.lib.decorators import (autocommit, expose, expose_xhr,
-    observable, paginate, validate)
+from mediacore.lib.decorators import autocommit, expose, observable, validate
 from mediacore.lib.helpers import redirect, url_for
 from mediacore.lib.storage import add_new_media_file
 from mediacore.lib.thumbnails import create_default_thumbs_for, has_thumbs
@@ -47,7 +36,11 @@ class UploadController(BaseController):
     def __before__(self, *args, **kwargs):
         if not request.settings['appearance_enable_user_uploads']:
             abort(404)
-        return BaseController.__before__(self, *args, **kwargs)
+        result = BaseController.__before__(self, *args, **kwargs)
+        # BareBonesController will set request.perm
+        if not request.perm.contains_permission('upload'):
+            abort(404)
+        return result
 
     @expose('upload/index.html')
     @observable(events.UploadController.index)

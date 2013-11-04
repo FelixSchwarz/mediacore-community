@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 """
 Email Helpers
@@ -32,9 +24,10 @@ Email Helpers
 
 import smtplib
 
-from pylons import request
+from pylons import config, request
 
-from mediacore.lib.helpers import line_break_xhtml, strip_xhtml, url_for
+from mediacore.lib.helpers import (line_break_xhtml, strip_xhtml, url_for, 
+    url_for_media)
 from mediacore.lib.i18n import _
 
 def parse_email_string(string):
@@ -66,7 +59,8 @@ def send(to_addrs, from_addr, subject, body):
     :param body: Body text of the email, optionally marked up with HTML.
     :type body: unicode
     """
-    server = smtplib.SMTP('localhost')
+    smtp_server = config.get('smtp_server', 'localhost')
+    server = smtplib.SMTP(smtp_server)
     if isinstance(to_addrs, basestring):
         to_addrs = parse_email_string(to_addrs)
 
@@ -76,6 +70,11 @@ def send(to_addrs, from_addr, subject, body):
            "From: %(from_addr)s\n"
            "Subject: %(subject)s\n\n"
            "%(body)s\n") % locals()
+
+    smtp_username = config.get('smtp_username')
+    smtp_password = config.get('smtp_password')
+    if smtp_username and smtp_password:
+        server.login(smtp_username, smtp_password)
 
     server.sendmail(from_addr, to_addrs, msg.encode('utf-8'))
     server.quit()
@@ -140,7 +139,7 @@ def send_comment_notification(media_obj, comment):
 
     author_name = media_obj.author.name
     comment_subject = comment.subject
-    post_url = url_for(controller='/media', action='view', slug=media_obj.slug, qualified=True)
+    post_url = url_for_media(media_obj, qualified=True)
     comment_body = strip_xhtml(line_break_xhtml(line_break_xhtml(comment.body)))
     subject = _('New Comment: %(comment_subject)s') % locals()
     body = _("""A new comment has been posted!

@@ -1,32 +1,22 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
-from paste.util import mimeparse
-from pylons import config, request, response, session, tmpl_context
-from repoze.what.predicates import has_permission
-from sqlalchemy import orm, sql
-import pylons.templating
+from pylons import request, response
+from sqlalchemy import orm
 
+from mediacore.lib.auth.util import viewable_media
 from mediacore.lib import helpers
 from mediacore.lib.base import BaseController
-from mediacore.lib.decorators import (beaker_cache, expose, expose_xhr,
-    observable, paginate, validate)
-from mediacore.lib.helpers import redirect
-from mediacore.model import Category, Media, Podcast, fetch_row
-from mediacore.model.meta import DBSession
+from mediacore.lib.decorators import (beaker_cache, expose, observable, 
+    paginate, validate)
+from mediacore.lib.helpers import content_type_for_response, url_for, redirect
+from mediacore.model import Media, Podcast, fetch_row
 from mediacore.plugin import events
+from mediacore.validation import LimitFeedItemsValidator
 
 import logging
 log = logging.getLogger(__name__)
@@ -41,15 +31,9 @@ class PodcastsController(BaseController):
 
     @expose('podcasts/index.html')
     @observable(events.PodcastsController.index)
-    def index(self, page=1, **kwargs):
+    def index(self, **kwargs):
         """List podcasts and podcast media.
 
-        Our custom paginate decorator allows us to have fewer podcast episodes
-        display on the first page than on the rest with the ``items_first_page``
-        param. See :class:`mediacore.lib.custompaginate.CustomPage`.
-
-        :param page: Page number, defaults to 1.
-        :type page: int
         :rtype: dict
         :returns:
             podcasts
@@ -65,8 +49,8 @@ class PodcastsController(BaseController):
 
         podcast_episodes = {}
         for podcast in podcasts:
-            podcast_episodes[podcast] = podcast.media.published()\
-                .order_by(Media.publish_on.desc())[:4]
+            episode_query = podcast.media.published().order_by(Media.publish_on.desc())
+            podcast_episodes[podcast] = viewable_media(episode_query)[:4]
 
         return dict(
             podcasts = podcasts,
@@ -99,6 +83,13 @@ class PodcastsController(BaseController):
 
         episodes, show = helpers.filter_library_controls(episodes, show)
 
+        episodes = viewable_media(episodes)
+        
+        if request.settings['rss_display'] == 'True':
+            response.feed_links.append(
+               (url_for(action='feed'), podcast.title)
+            )
+
         return dict(
             podcast = podcast,
             episodes = episodes,
@@ -106,10 +97,11 @@ class PodcastsController(BaseController):
             show = show,
         )
 
-    @beaker_cache(expire=60 * 20, query_args=True)
+    @validate(validators={'limit': LimitFeedItemsValidator()})
+    @beaker_cache(expire=60 * 20)
     @expose('podcasts/feed.xml')
     @observable(events.PodcastsController.feed)
-    def feed(self, slug, **kwargs):
+    def feed(self, slug, limit=None, **kwargs):
         """Serve the feed as RSS 2.0.
 
         If :attr:`~mediacore.model.podcasts.Podcast.feedburner_url` is
@@ -136,14 +128,13 @@ class PodcastsController(BaseController):
             and not kwargs.get('feedburner_bypass', False)):
             redirect(podcast.feedburner_url.encode('utf-8'))
 
-        # Choose the most appropriate content_type for the client
-        response.content_type = mimeparse.best_match(
-            ['application/rss+xml', 'application/xml', 'text/xml'],
-            request.environ.get('HTTP_ACCEPT', '*/*')
-        )
+        response.content_type = content_type_for_response(
+            ['application/rss+xml', 'application/xml', 'text/xml'])
 
-        episodes = podcast.media.published()\
-            .order_by(Media.publish_on.desc())[:25]
+        episode_query = podcast.media.published().order_by(Media.publish_on.desc())
+        episodes = viewable_media(episode_query)
+        if limit is not None:
+            episodes = episodes.limit(limit)
 
         return dict(
             podcast = podcast,

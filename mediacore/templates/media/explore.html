@@ -1,21 +1,15 @@
-<!--! This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-
-	MediaCore is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	MediaCore is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+<!--!
+This file is a part of MediaDrop (http://www.mediadrop.net),
+Copyright 2009-2013 MediaDrop contributors
+For the exact contribution history, see the git revision log.
+The source code contained in this file is licensed under the GPLv3 or
+(at your option) any later version.
+See LICENSE.txt in the main project directory, for more information.
 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:fb="http://www.facebook.com/2008/fbml"
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:i18n="http://genshi.edgewall.org/i18n"
       xmlns:xi="http://www.w3.org/2001/XInclude">
@@ -23,17 +17,8 @@
 
 <head>
 	<title>${h.page_title(default='Explore', media='all')}</title>
-	<meta name="keywords" content="${h.meta_keywords(media='all') or 'MediaCore'}" />
-	<meta name="description" content="${h.meta_description(media='all') or 'MediaCore Video CMS'}" />
-	<link py:if="settings['sitemaps_display'] == 'True'"
-	      rel="alternate" type="application/rss+xml" title="Sitemap XML"
-	      href="${h.url_for(controller='/sitemaps', action='google')}" />
-	<link py:if="settings['sitemaps_display'] == 'True'"
-	      rel="alternate" type="application/rss+xml" title="Sitemap RSS"
-	      href="${h.url_for(controller='/sitemaps', action='mrss')}" />
-	<link py:if="settings['rss_display'] == 'True'"
-	      rel="alternate" type="application/rss+xml" title="Latest RSS"
-	      href="${h.url_for(controller='/sitemaps', action='latest')}" />
+	<meta name="keywords" content="${h.meta_keywords(media='all') or 'MediaDrop'}" />
+	<meta name="description" content="${h.meta_description(media='all') or 'MediaDrop Video CMS'}" />
 </head>
 <body class="nav-explore-on">
 	<div class="mediacore-content clearfix">
@@ -86,11 +71,11 @@
 				<div class="feat-top" />
 				<div class="feat-content clearfix">
 					${h.media_player(featured, width=410, height=231)}
-					<h3><a class="underline-hover" href="${h.url_for(controller='/media', action='view', slug=featured.slug)}">${featured.title}</a></h3>
+					<h3><a class="underline-hover" href="${h.url_for_media(featured)}">${featured.title}</a></h3>
 					<div class="feat-meta">
-						<span class="meta meta-comments">${featured.comment_count_published} ${ungettext('Comment', 'Comments', featured.comment_count_published)}</span>
-						<span py:if="settings['appearance_show_like']" class="meta meta-likes"><span id="mcore-likes-counter">${featured.likes}</span> ${ungettext('Like', 'Likes', featured.likes)}</span>
-						<span class="meta meta-views">${featured.views} ${ungettext('View', 'Views', featured.views)}</span>
+						<span py:if="settings['comments_engine'] == 'builtin'" class="meta meta-comments">${featured.comment_count_published} ${ungettext('Comment', 'Comments', featured.comment_count_published)}</span>
+						<span py:if="settings['appearance_show_like'] and settings.get('likes') != 'facebook'" class="meta meta-likes"><span id="mcore-likes-counter">${h.format_decimal(featured.likes)}</span> ${ungettext('Like', 'Likes', featured.likes)}</span>
+						<span class="meta meta-views">${h.format_decimal(featured.views)} ${ungettext('View', 'Views', featured.views)}</span>
 					</div>
 				</div>
 				<div class="feat-bottom" />

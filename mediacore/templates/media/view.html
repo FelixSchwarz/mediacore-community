@@ -1,17 +1,10 @@
-<!--! This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-
-	MediaCore is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	MediaCore is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+<!--!
+This file is a part of MediaDrop (http://www.mediadrop.net),
+Copyright 2009-2013 MediaDrop contributors
+For the exact contribution history, see the git revision log.
+The source code contained in this file is licensed under the GPLv3 or
+(at your option) any later version.
+See LICENSE.txt in the main project directory, for more information.
 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -22,15 +15,21 @@
       xmlns:xi="http://www.w3.org/2001/XInclude"
       py:with="comments_engine = settings['comments_engine']">
 <xi:include href="../master.html" />
-<xi:include href="../comments/_list.html" py:if="comments_engine == 'mediacore'" />
+<xi:include href="../comments/_list.html" py:if="comments_engine == 'builtin'" />
 <xi:include href="../comments/facebook.html" py:if="comments_engine == 'facebook'" />
 <head>
 	<title>${h.page_title(default=media.title, media=media)}</title>
 	<link py:if="media.podcast" href="${h.url_for('/styles/podcasts.css')}" media="screen" rel="stylesheet" type="text/css" />
 	<meta name="description" content="${h.meta_description(media=media)}" />
 	<meta name="keywords" content="${h.meta_keywords(media=media)}" />
-	<!--! Expose the video thumbnail for facebook and potentially others to scrape. Is qualified necessary? -->
-	<link rel="image_src" href="${h.thumb_url(media, 'm', qualified=True)}" />
+
+	<meta property="og:title" content="${h.page_title(default=media.title, media=media)}"/>
+	<meta property="og:url" content="${h.url_for_media(media, qualified=True)}"/>
+	<meta property="og:description" content="${h.meta_description(media=media)}"/>
+	<meta property="og:site_name" content="${h.page_title()}"/>
+	<meta property="og:image" content="${h.thumb_url(media, 'l', qualified=True)}"/>
+
+	<link rel="image_src" href="${h.thumb_url(media, 'l', qualified=True)}" />
 </head>
 <body class="${media.podcast and 'nav-podcasts-on' or 'nav-media-on'}" py:with="is_widescreen = (settings['appearance_enable_widescreen_view'] == 'True')">
 	<div id="media-wrapper" class="mediacore-content clearfix">
@@ -48,7 +47,7 @@
 		<div id="media-info">
 			<py:if test="not is_widescreen">${media_box(media)}</py:if>
 
-			<a href="${h.url_for(controller='/admin/media', action='edit', id=media.id)}" class="underline-hover f-rgt" py:if="h.can_edit(media)">Edit</a>
+			<a href="${h.url_for(controller='/admin/media', action='edit', id=media.id)}" class="underline-hover f-rgt" py:if="h.can_edit()">Edit</a>
 			<h3 class="feat-title">${media.title}</h3>
 			<div class="feat-date" py:choose="">
 				<py:when test="media.is_published" py:with="datetime = h.format_date(media.publish_on, 'long')">${datetime}</py:when>
@@ -60,19 +59,19 @@
 				<div class="mcore-excerpt" style="display:none" py:if="excerpt != fulltext"><p py:replace="Markup(excerpt)" /></div>
 			</div>
 			<div class="feat-stats clearfix">
-				<div class="meta-views f-rgt">${media.views} ${ungettext('View', 'Views', media.views)}</div>
-				<div py:if="settings['appearance_show_like'] or settings['appearance_show_dislike']" class="meta-likes f-rgt">
-					<span py:if="settings['appearance_show_like']" id="mcore-likes-counter">${media.likes}</span> ${ungettext('Like', 'Likes', media.likes)}
-					<span py:if="settings['appearance_show_dislike']" class="meta-dislikes"><span id="mcore-dislikes-counter">${media.dislikes}</span> ${ungettext('Dislike', 'Dislikes', media.dislikes)}</span>
+				<div class="meta-views f-rgt">${h.format_decimal(media.views)} ${ungettext('View', 'Views', media.views)}</div>
+				<div py:if="settings.get('likes') != 'facebook' and (settings['appearance_show_like'] or settings['appearance_show_dislike'])" class="meta-likes f-rgt">
+					<span py:if="settings['appearance_show_like']" id="mcore-likes-counter">${h.format_decimal(media.likes)}</span> ${ungettext('Like', 'Likes', media.likes)}
+					<span py:if="settings['appearance_show_dislike']" class="meta-dislikes"><span id="mcore-dislikes-counter">${h.format_decimal(media.dislikes)}</span> ${ungettext('Dislike', 'Dislikes', media.dislikes)}</span>
 				</div>
-				<div py:if="comments_engine == 'mediacore'" class="meta-comments f-lft"><span id="mcore-comments-counter">${media.comment_count_published}</span> ${ungettext('Comment', 'Comments', media.comment_count_published)}</div>
+				<div py:if="comments_engine == 'builtin'" class="meta-comments f-lft"><span id="mcore-comments-counter">${media.comment_count_published}</span> ${ungettext('Comment', 'Comments', media.comment_count_published)}</div>
 			</div>
 
 			<py:choose test="comments_engine">
 				<py:when test="'facebook'">
-					${facebook_comment(appid=settings['facebook_appid'], xid=media.id)}
+					${facebook_comment(media=media)}
 				</py:when>
-				<py:when test="'mediacore'">
+				<py:when test="'builtin'">
 					${comment_list(comments, comment_form_action, comment_form_values)}
 				</py:when>
 			</py:choose>

@@ -1,28 +1,19 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 """The application's model objects"""
 
 import re
-import simplejson
 
 import webob.exc
 from sqlalchemy import sql, orm
 from sqlalchemy.orm import class_mapper
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import bindparam, ClauseList, ColumnElement
-from sqlalchemy.types import FLOAT, MutableType, Text, TypeDecorator
+from sqlalchemy.types import FLOAT
 from sqlalchemy.ext.compiler import compiles
 from unidecode import unidecode
 
@@ -133,7 +124,7 @@ def slugify(string):
 
     return string[:SLUG_LENGTH]
 
-def get_available_slug(mapped_class, string, ignore=None):
+def get_available_slug(mapped_class, string, ignore=None, slug_attr='slug', slug_length=SLUG_LENGTH):
     """Return a unique slug based on the provided string.
 
     Works by appending an int in sequence starting with 2:
@@ -158,11 +149,11 @@ def get_available_slug(mapped_class, string, ignore=None):
     new_slug = slug = slugify(string)
     appendix = 2
     while DBSession.query(mapped_class.id)\
-            .filter(mapped_class.slug == new_slug)\
+            .filter(getattr(mapped_class, slug_attr) == new_slug)\
             .filter(mapped_class.id != ignore)\
             .first():
         str_appendix = u'-%s' % appendix
-        max_substr_len = SLUG_LENGTH - len(str_appendix)
+        max_substr_len = slug_length - len(str_appendix)
         new_slug = slug[:max_substr_len] + str_appendix
         appendix += 1
 
@@ -246,26 +237,6 @@ def _compile_fulltext_mysql(element, compiler, **kwargs):
         'bool_mode': element.bool and ' IN BOOLEAN MODE' or ''
     }
 
-class JsonType(MutableType, TypeDecorator):
-    """
-    JSON Type Decorator
-
-    This converts JSON strings to python objects and vice-versa when
-    working with SQLAlchemy Tables. The resulting python objects are
-    mutable: SQLAlchemy will be aware of any changes you make within
-    them, and they're saved automatically.
-
-    """
-    impl = Text
-
-    def process_bind_param(self, value, dialect, dumps=simplejson.dumps):
-        return dumps(value)
-
-    def process_result_value(self, value, dialect, loads=simplejson.loads):
-        return loads(value)
-
-    def copy_value(self, value, loads=simplejson.loads, dumps=simplejson.dumps):
-        return loads(dumps(value))
 
 __all__ = [
     'DBSession',

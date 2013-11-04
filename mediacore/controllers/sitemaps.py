@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 """
 Sitemaps Controller
@@ -20,16 +12,19 @@ import logging
 import math
 import os
 
+from formencode import validators
 from paste.fileapp import FileApp
-from paste.util import mimeparse
-from pylons import app_globals, config, request, response
+from pylons import config, request, response
 from pylons.controllers.util import abort, forward
 from webob.exc import HTTPNotFound
 
+from mediacore.plugin import events
 from mediacore.lib.base import BaseController
-from mediacore.lib.decorators import expose, beaker_cache
-from mediacore.lib.helpers import get_featured_category, redirect, url_for
+from mediacore.lib.decorators import expose, beaker_cache, observable, validate
+from mediacore.lib.helpers import (content_type_for_response, 
+    get_featured_category, url_for, viewable_media)
 from mediacore.model import Media
+from mediacore.validation import LimitFeedItemsValidator
 
 log = logging.getLogger(__name__)
 
@@ -37,13 +32,19 @@ log = logging.getLogger(__name__)
 # when static_files is disabled and no Apache alias is configured.
 crossdomain_app = None
 
+
 class SitemapsController(BaseController):
     """
     Sitemap generation
     """
 
-    @beaker_cache(expire=60 * 60 * 4, query_args=True)
+    @validate(validators={
+        'page': validators.Int(if_empty=None, if_missing=None, if_invalid=None), 
+        'limit': validators.Int(if_empty=10000, if_missing=10000, if_invalid=10000)
+    })
+    @beaker_cache(expire=60 * 60 * 4)
     @expose('sitemaps/google.xml')
+    @observable(events.SitemapsController.google)
     def google(self, page=None, limit=10000, **kwargs):
         """Generate a sitemap which contains googles Video Sitemap information.
 
@@ -60,12 +61,10 @@ class SitemapsController(BaseController):
         if request.settings['sitemaps_display'] != 'True':
             abort(404)
 
-        response.content_type = mimeparse.best_match(
-            ['application/xml', 'text/xml'],
-            request.environ.get('HTTP_ACCEPT', '*/*')
-        )
+        response.content_type = \
+            content_type_for_response(['application/xml', 'text/xml'])
 
-        media = Media.query.published()
+        media = viewable_media(Media.query.published())
 
         if page is None:
             if media.count() > limit:
@@ -92,38 +91,42 @@ class SitemapsController(BaseController):
 
     @beaker_cache(expire=60 * 60, query_args=True)
     @expose('sitemaps/mrss.xml')
+    @observable(events.SitemapsController.mrss)
     def mrss(self, **kwargs):
         """Generate a media rss (mRSS) feed of all the sites media."""
         if request.settings['sitemaps_display'] != 'True':
             abort(404)
 
-        response.content_type = mimeparse.best_match(
-            ['application/rss+xml', 'application/xml', 'text/xml'],
-            request.environ.get('HTTP_ACCEPT', '*/*')
-        )
 
-        media = Media.query.published()
+        response.content_type = content_type_for_response(
+            ['application/rss+xml', 'application/xml', 'text/xml'])
+
+        media = viewable_media(Media.query.published())
 
         return dict(
             media = media,
             title = 'MediaRSS Sitemap',
         )
 
-    @beaker_cache(expire=60 * 3, query_args=True)
+    @validate(validators={
+        'limit': LimitFeedItemsValidator(),
+        'skip': validators.Int(if_empty=0, if_missing=0, if_invalid=0)
+    })
+    @beaker_cache(expire=60 * 3)
     @expose('sitemaps/mrss.xml')
-    def latest(self, limit=30, skip=0, **kwargs):
+    @observable(events.SitemapsController.latest)
+    def latest(self, limit=None, skip=0, **kwargs):
         """Generate a media rss (mRSS) feed of all the sites media."""
         if request.settings['rss_display'] != 'True':
             abort(404)
 
-        response.content_type = mimeparse.best_match(
-            ['application/rss+xml', 'application/xml', 'text/xml'],
-            request.environ.get('HTTP_ACCEPT', '*/*')
-        )
+        response.content_type = content_type_for_response(
+            ['application/rss+xml', 'application/xml', 'text/xml'])
 
-        media = Media.query.published()\
-            .order_by(Media.publish_on.desc())\
-            .limit(limit)
+        media_query = Media.query.published().order_by(Media.publish_on.desc())
+        media = viewable_media(media_query)
+        if limit is not None:
+            media = media.limit(limit)
 
         if skip > 0:
             media = media.offset(skip)
@@ -133,22 +136,27 @@ class SitemapsController(BaseController):
             title = 'Latest Media',
         )
 
-    @beaker_cache(expire=60 * 3, query_args=True)
+    @validate(validators={
+        'limit': LimitFeedItemsValidator(),
+        'skip': validators.Int(if_empty=0, if_missing=0, if_invalid=0)
+    })
+    @beaker_cache(expire=60 * 3)
     @expose('sitemaps/mrss.xml')
-    def featured(self, limit=30, skip=0, **kwargs):
+    @observable(events.SitemapsController.featured)
+    def featured(self, limit=None, skip=0, **kwargs):
         """Generate a media rss (mRSS) feed of the sites featured media."""
         if request.settings['rss_display'] != 'True':
             abort(404)
 
-        response.content_type = mimeparse.best_match(
-            ['application/rss+xml', 'application/xml', 'text/xml'],
-            request.environ.get('HTTP_ACCEPT', '*/*')
-        )
+        response.content_type = content_type_for_response(
+            ['application/rss+xml', 'application/xml', 'text/xml'])
 
-        media = Media.query.in_category(get_featured_category())\
+        media_query = Media.query.in_category(get_featured_category())\
             .published()\
-            .order_by(Media.publish_on.desc())\
-            .limit(limit)
+            .order_by(Media.publish_on.desc())
+        media = viewable_media(media_query)
+        if limit is not None:
+            media = media.limit(limit)
 
         if skip > 0:
             media = media.offset(skip)
@@ -163,7 +171,7 @@ class SitemapsController(BaseController):
         """Serve the crossdomain XML file manually if static_files is disabled.
 
         If someone forgets to add this Alias we might as well serve this file
-        for them and save everyone the trouble. This only works when MediaCore
+        for them and save everyone the trouble. This only works when MediaDrop
         is served out of the root of a domain and if Cooliris is enabled.
         """
         global crossdomain_app
@@ -172,7 +180,7 @@ class SitemapsController(BaseController):
             # Ensure the cache is cleared if cooliris is suddenly disabled
             if crossdomain_app:
                 crossdomain_app = None
-            raise HTTPNotFound().exception
+            raise HTTPNotFound()
 
         if not crossdomain_app:
             relpath = 'mediacore/public/crossdomain.xml'

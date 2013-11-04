@@ -1,51 +1,32 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-import os
+# See LICENSE.txt in the main project directory, for more information.
 
 from operator import itemgetter
 
-import formencode
-
 from babel.core import Locale
-from pylons import app_globals, config, request
-from tw.forms import CheckBox, RadioButtonList, SingleSelectField
-from tw.forms.fields import Button, CheckBox
-from tw.forms.validators import (Bool, FancyValidator, FieldStorageUploadConverter,
+from pylons import request
+from tw.forms import RadioButtonList, SingleSelectField
+from tw.forms.fields import CheckBox
+from tw.forms.validators import (Bool, FieldStorageUploadConverter,
     Int, OneOf, Regex, StringBool)
 
 from mediacore.forms import (FileField, ListFieldSet, ListForm,
-    ResetButton, SubmitButton, TextArea, TextField, XHTMLTextArea,
+    SubmitButton, TextArea, TextField, XHTMLTextArea,
     email_validator, email_list_validator)
 from mediacore.forms.admin.categories import category_options
 from mediacore.lib.i18n import N_, _, get_available_locales
 from mediacore.plugin import events
-from mediacore.model import MultiSetting
 
 comments_enable_disable = lambda: (
-    ('mediacore', _("Built-in comments")),
+    ('builtin', _("Built-in comments")),
     ('facebook', _('Facebook comments (requires a Facebook application ID)')),
     ('disabled', _('Disable comments')),
 )
-comments_enable_validator = OneOf(('mediacore', 'facebook', 'disabled'))
-
-enable_disable = lambda: (
-    ('enabled', _('Enable')),
-    ('disabled', _('Disable')),
-)
-enable_disable_validator = OneOf(('enabled', 'disabled'))
+comments_enable_validator = OneOf(('builtin', 'facebook', 'disabled'))
 
 title_options = lambda: (
     ('prepend', _('Prepend')),
@@ -86,22 +67,7 @@ def languages():
     return result
 
 
-def multi_settings_options(key):
-    settings = MultiSetting.query\
-        .filter(MultiSetting.key==key)\
-        .all()
-    return [(s.id, s.value) for s in settings]
-
 def boolean_radiobuttonlist(name, **kwargs):
-    return RadioButtonList(
-        name,
-        options=lambda: (('true', _('Yes')), ('false', _('No'))),
-        validator=OneOf(['true', 'false']),
-        **kwargs
-    )
-
-def real_boolean_radiobuttonlist(name, **kwargs):
-    # TODO: replace uses of boolean_radiobuttonlist with this, then scrap the old one.
     return RadioButtonList(
         name,
         options=lambda: ((True, _('Yes')), (False, _('No'))),
@@ -114,7 +80,9 @@ class NotificationsForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-
+    
+    event = events.Admin.Settings.NotificationsForm
+    
     fields = [
         ListFieldSet('email', suppress_label=True, legend=N_('Email Notifications:'), css_classes=['details_fieldset'], children=[
             TextField('email_media_uploaded', validator=email_list_validator, label_text=N_('Media Uploaded'), maxlength=255),
@@ -125,12 +93,15 @@ class NotificationsForm(ListForm):
         SubmitButton('save', default=N_('Save'), css_classes=['btn', 'btn-save', 'blue', 'f-rgt']),
     ]
 
+
 class PopularityForm(ListForm):
     template = 'admin/box-form.html'
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-
+    
+    event = events.Admin.Settings.PopularityForm
+    
     fields = [
         ListFieldSet('popularity',
             suppress_label=True,
@@ -167,6 +138,9 @@ class UploadForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
+    
+    event = events.Admin.Settings.UploadForm
+    
     fields = [
         TextField('max_upload_size', label_text=N_('Max. allowed upload file size in megabytes'), validator=MegaByteValidator(not_empty=True, min=0)),
         ListFieldSet('legal_wording', suppress_label=True, legend=N_('Legal Wording:'), css_classes=['details_fieldset'], children=[
@@ -180,6 +154,9 @@ class AnalyticsForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
+    
+    event = events.Admin.Settings.AnalyticsForm
+    
     fields = [
         ListFieldSet('google', suppress_label=True, legend=N_('Google Analytics Details:'), css_classes=['details_fieldset'], children=[
             TextField('google_analytics_uacct', maxlength=255, label_text=N_('Tracking Code')),
@@ -192,6 +169,9 @@ class SiteMapsForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
+    
+    event = events.Admin.Settings.SiteMapsForm
+    
     fields = [
         ListFieldSet('rss', suppress_label=True,
             legend='',
@@ -207,6 +187,19 @@ class SiteMapsForm(ListForm):
                     validator=Bool(if_missing='')),
             ]
         ),
+        ListFieldSet('feeds',
+            suppress_label=True,
+            css_classes=['details_fieldset'],
+            legend=N_('RSS Feed Defaults:'),
+            children=[
+                TextField(u'default_feed_results', validator=Int(not_empty=True, min=1, if_missing=30), 
+                    label_text=N_(u'number of items'),
+                    help_text=N_(u'The number of items in the feed can be overriden per request '
+                                 U'if you add "?limit=X" to the feed URL. If the "limit" parameter '
+                                 u'is absent, the default above is used.'),
+                ),
+            ]
+        ),
         SubmitButton('save', default=N_('Save'), css_classes=['btn', 'btn-save', 'blue', 'f-rgt']),
     ]
 
@@ -215,6 +208,9 @@ class GeneralForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
+    
+    event = events.Admin.Settings.GeneralForm
+    
     fields = [
         ListFieldSet('general', suppress_label=True, legend=N_('General Settings:'), css_classes=['details_fieldset'], children=[
             TextField('general_site_name', maxlength=255,
@@ -237,13 +233,6 @@ class GeneralForm(ListForm):
                 options=rich_text_editors,
                 validator=rich_text_editors_validator,
             ),
-# NOTE: Commented out, pending removal in v0.9.1 if no one complains its gone.
-#            ListFieldSet('default_wording', suppress_label=True, legend=N_('Administrative notes on Media:'), css_classes=['details_fieldset'], children=[
-#                CheckBox('wording_display_administrative_notes',
-#                    label_text=N_('Display notes'),
-#                    validator=Bool(if_missing='')),
-#                TextArea('wording_administrative_notes', label_text=N_('Administrative Notes'), attrs=dict(rows=3, cols=25)),
-#            ]),
         ]),
         SubmitButton('save', default=N_('Save'), css_classes=['btn', 'btn-save', 'blue', 'f-rgt']),
     ]
@@ -253,7 +242,9 @@ class CommentsForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-
+    
+    event = events.Admin.Settings.CommentsForm
+    
     fields = [
        RadioButtonList('comments_engine',
             label_text=N_('Comment Engine'),
@@ -275,7 +266,7 @@ class CommentsForm(ListForm):
         ]),
         ListFieldSet('facebook', suppress_label=True, legend=N_('Facebook Comments:'), css_classes=['details_fieldset'], children=[
             TextField('facebook_appid', label_text=N_('Application ID'),
-                help_text=N_('See: http://www.facebook.com/developers/createapp.php')),
+                help_text=N_('See: https://developers.facebook.com/apps')),
         ]),
         SubmitButton('save', default=N_('Save'), css_classes=['btn', 'btn-save', 'blue', 'f-rgt']),
     ]
@@ -285,7 +276,9 @@ class APIForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
-
+    
+    event = events.Admin.Settings.APIForm
+    
     fields = [
         boolean_radiobuttonlist('api_secret_key_required', label_text=N_('Require a key to access the API')),
         ListFieldSet('key', suppress_label=True, legend=N_('API Key:'), css_classes=['details_fieldset'], children=[
@@ -303,6 +296,9 @@ class AppearanceForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
+    
+    event = events.Admin.Settings.AppearanceForm
+    
     fields = [
         ListFieldSet('general', suppress_label=True, legend=N_('General'),
             css_classes=['details_fieldset'],
@@ -347,6 +343,13 @@ class AppearanceForm(ListForm):
                 CheckBox('appearance_enable_cooliris',
                     css_classes=['checkbox-left'],
                     label_text=N_('Enable Cooliris on the Explore Page'),
+                    help_text=N_('Cooliris support is deprecated and will be ' + \
+                        'removed in the next major version of MediaDrop ' + \
+                        'unless someone is interested in maintaining it.'),
+                    validator=Bool(if_missing='')),
+                CheckBox(u'appearance_display_login',
+                    css_classes=['checkbox-left'],
+                    label_text=N_('Display login link for all users'),
                     validator=Bool(if_missing='')),
                 CheckBox('appearance_enable_featured_items',
                     label_text=N_('Enable Featured Items on the Explore Page'),
@@ -372,12 +375,12 @@ class AppearanceForm(ListForm):
                     label_text=N_('Display Background Image'),
                     css_classes=['checkbox-left'],
                     validator=Bool(if_missing='')),
-                CheckBox('appearance_display_mediacore_footer',
-                    label_text=N_('Display MediaCore Footer'),
+                CheckBox('appearance_display_mediadrop_footer',
+                    label_text=N_('Display MediaDrop Footer'),
                     css_classes=['checkbox-left'],
                     validator=Bool(if_missing='')),
-                CheckBox('appearance_display_mediacore_credits',
-                    label_text=N_('Display MediaCore Credits in Footer'),
+                CheckBox('appearance_display_mediadrop_credits',
+                    label_text=N_('Display MediaDrop Credits in Footer'),
                     css_classes=['checkbox-left'],
                     validator=Bool(if_missing='')),
             ],
@@ -429,6 +432,13 @@ class AppearanceForm(ListForm):
                 TextArea('appearance_custom_footer_html',
                     label_text=N_('Custom Footer HTML'),
                     attrs=dict(rows=15, cols=25)),
+                TextArea('appearance_custom_head_tags',
+                    label_text=N_('Custom <head> Tags'),
+                    help_text=N_('These HTML tags are inserted into the HTML '
+                        '<head> section. Bad input can cause ugly rendering of '
+                        'your site. You can always restore your page by '
+                        'the box above.'),
+                    attrs=dict(rows=15, cols=25)),
             ],
         ),
         SubmitButton('save', default=N_('Save'), css_classes=['btn', 'btn-save', 'blue', 'f-rgt']),
@@ -441,6 +451,9 @@ class AdvertisingForm(ListForm):
     id = 'settings-form'
     css_class = 'form'
     submit_text = None
+    
+    event = events.Admin.Settings.AdvertisingForm
+    
     fields = [
         ListFieldSet('advanced', suppress_label=True, legend='',
             css_classes=['details_fieldset'],
@@ -455,3 +468,5 @@ class AdvertisingForm(ListForm):
         ),
         SubmitButton('save', default=N_('Save'), css_classes=['btn', 'btn-save', 'blue', 'f-rgt']),
     ]
+
+

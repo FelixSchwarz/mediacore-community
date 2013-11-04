@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 import filecmp
 import os
@@ -24,6 +16,7 @@ from PIL import Image
 #      behavior from mediacore.lib.helpers.url_for
 from pylons import config, url as url_for
 
+import mediacore
 from mediacore.lib.util import delete_files
 
 __all__ = [
@@ -230,7 +223,7 @@ def create_thumbs_for(item, image_file, image_filename):
         thumb_img = resize_thumb(img, xy)
         if thumb_img.mode != "RGB":
             thumb_img = thumb_img.convert("RGB")
-        thumb_img.save(path)
+        thumb_img.save(path, quality=90)
 
     # Backup the original image, ensuring there's no odd chars in the ext.
     # Thumbs from DailyMotion include an extra query string that needs to be
@@ -259,9 +252,13 @@ def create_default_thumbs_for(item):
         can be extracted automatically.
     :type item: ``tuple`` or mapped class instance
     """
+    mediacore_dir = os.path.join(os.path.dirname(mediacore.__file__), '..')
     image_dir, item_id = _normalize_thumb_item(item)
     for key in config['thumb_sizes'][image_dir].iterkeys():
         src_file = thumb_path((image_dir, 'new'), key)
+        if not os.path.exists(src_file):
+            default_image_dir = os.path.join(mediacore_dir, 'data', 'images', image_dir)
+            src_file = thumb_path((default_image_dir, 'new'), key)
         dst_file = thumb_path(item, key)
         shutil.copyfile(src_file, dst_file)
 

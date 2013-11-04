@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 """
 Player Preferences
 
@@ -20,19 +12,19 @@ preferences for, and the relative priority of, the different players
 that MediaCore should try to play media with.
 
 """
-import logging
 
+import logging
 from datetime import datetime
 
 from sqlalchemy import Column, sql, Table
-from sqlalchemy.orm import column_property, dynamic_loader, mapper
-from sqlalchemy.orm.interfaces import MapperExtension
+from sqlalchemy.orm import mapper
 from sqlalchemy.types import Boolean, DateTime, Integer, Unicode
 
 from mediacore.lib.decorators import memoize
+from mediacore.lib.i18n import _
 from mediacore.lib.players import AbstractPlayer
-from mediacore.model import JsonType
 from mediacore.model.meta import DBSession, metadata
+from mediacore.model.util import JSONType
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +51,7 @@ players = Table('players', metadata,
                                                     onupdate=datetime.now, doc=\
         """The date and time this player was last modified."""),
 
-    Column('data', JsonType, nullable=False, default=dict, doc=\
+    Column('data', JSONType, nullable=False, default=dict, doc=\
         """The user preferences for this player (if any).
 
         This dictionary is passed as `data` kwarg when
@@ -97,11 +89,17 @@ class PlayerPrefs(object):
         """Return the user-friendly display name for this player class.
 
         This string is expected to be i18n-ready. Simply wrap it in a
-        call to :func:`pylons.i18n._`.
+        call to :func:`mediacore.lib.i18n._`.
 
         :rtype: unicode
         :returns: A i18n-ready string name.
         """
+        if self.player_cls is None:
+            # do not break the admin interface (admin/settings/players) if the
+            # player is still in the database but the actual player class is not
+            # available anymore (this can happen especially for players provided
+            # by external plugins.
+            return _(u'%s (broken)') % self.name
         return self.player_cls.display_name
 
     @property
@@ -158,12 +156,12 @@ def cleanup_players_table(enabled=False):
     """
     from mediacore.lib.players import (BlipTVFlashPlayer,
         DailyMotionEmbedPlayer, GoogleVideoFlashPlayer, JWPlayer,
-        VimeoUniversalEmbedPlayer, YoutubeFlashPlayer)
+        VimeoUniversalEmbedPlayer, YoutubePlayer)
 
     # When adding players, prefer them in the following order:
     default_players = [
         JWPlayer,
-        YoutubeFlashPlayer,
+        YoutubePlayer,
         VimeoUniversalEmbedPlayer,
         GoogleVideoFlashPlayer,
         BlipTVFlashPlayer,

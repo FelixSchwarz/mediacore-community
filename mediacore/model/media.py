@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 """
 Media Models
@@ -28,13 +20,9 @@ belongs to a :class:`mediacore.model.podcasts.Podcast`.
 
 """
 
-import math
-import os.path
-
 from datetime import datetime
 
-from sqlalchemy import Table, ForeignKey, Column, sql
-from sqlalchemy.exc import OperationalError
+from sqlalchemy import Table, ForeignKey, Column, event, sql
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import (attributes, backref, class_mapper, column_property,
     composite, dynamic_loader, mapper, Query, relation, validates)
@@ -42,19 +30,19 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.schema import DDL
 from sqlalchemy.types import Boolean, DateTime, Integer, Unicode, UnicodeText
 
-from pylons import app_globals
-
+from mediacore.lib.auth import Resource
 from mediacore.lib.compat import any
-from mediacore.lib.filetypes import AUDIO, AUDIO_DESC, CAPTIONS, VIDEO, guess_mimetype
+from mediacore.lib.filetypes import AUDIO, AUDIO_DESC, VIDEO, guess_mimetype
 from mediacore.lib.players import pick_any_media_file, pick_podcast_media_file
 from mediacore.lib.util import calculate_popularity
 from mediacore.lib.xhtml import line_break_xhtml, strip_xhtml
-from mediacore.model import SLUG_LENGTH, _mtm_count_property, _properties_dict_from_labels, MatchAgainstClause
+from mediacore.model import (get_available_slug, SLUG_LENGTH, 
+    _mtm_count_property, _properties_dict_from_labels, MatchAgainstClause)
 from mediacore.model.meta import DBSession, metadata
 from mediacore.model.authors import Author
-from mediacore.model.categories import Category, CategoryList, categories
+from mediacore.model.categories import Category, CategoryList
 from mediacore.model.comments import Comment, CommentQuery, comments
-from mediacore.model.tags import Tag, TagList, tags, extract_tags, fetch_and_create_tags
+from mediacore.model.tags import Tag, TagList, extract_tags, fetch_and_create_tags
 from mediacore.plugin import events
 
 
@@ -257,7 +245,11 @@ def _setup_mysql_fulltext_indexes():
             'name': name,
             'cols': ', '.join(col.name for col in cols)
         }
-        DDL(sql, on='mysql').execute_at('after-create', media_fulltext)
+        event.listen(
+            media_fulltext,
+            u'after_create',
+            DDL(sql).execute_if(dialect=u'mysql')
+        )
 _setup_mysql_fulltext_indexes()
 
 class MediaQuery(Query):
@@ -348,6 +340,9 @@ class MediaQuery(Query):
 
     def in_categories(self, cats):
         """Filter results to Media in at least one of the given categories"""
+        if len(cats) == 0:
+            # SQLAlchemy complains about an empty IN-predicate
+            return self.filter(media_categories.c.media_id == -1)
         all_cats = cats[:]
         for cat in cats:
             all_cats.extend(cat.descendants())
@@ -453,6 +448,24 @@ class Media(object):
     def __repr__(self):
         return '<Media: %r>' % self.slug
 
+    @classmethod
+    def example(cls, **kwargs):
+        media = Media()
+        defaults = dict(
+            title=u'Foo Media',
+            author=Author(u'Joe', u'joe@site.example'),
+            
+            type = None,
+        )
+        defaults.update(kwargs)
+        defaults.setdefault('slug', get_available_slug(Media, defaults['title']))
+        for key, value in defaults.items():
+            assert hasattr(media, key)
+            setattr(media, key, value)
+        DBSession.add(media)
+        DBSession.flush()
+        return media
+
     def set_tags(self, tags):
         """Set the tags relations of this media, creating them as needed.
 
@@ -479,8 +492,11 @@ class Media(object):
         Call this after modifying any files belonging to this item.
 
         """
+        was_encoded = self.encoded
         self.type = self._update_type()
         self.encoded = self._update_encoding()
+        if self.encoded and not was_encoded:
+            events.Media.encoding_done(self)
 
     def _update_type(self):
         """Update the type of this Media object.
@@ -492,14 +508,12 @@ class Media(object):
             return VIDEO
         elif any(file.type == AUDIO for file in self.files):
             return AUDIO
-        else:
-            return None
+        return None
 
     def _update_encoding(self):
         # Test to see if we can find a workable file/player combination
         # for the most common podcasting app w/ the POOREST format support
-        if self.podcast_id \
-        and not pick_podcast_media_file(self):
+        if self.podcast_id and not pick_podcast_media_file(self):
             return False
         # Test to see if we can find a workable file/player combination
         # for the browser w/ the BEST format support
@@ -515,6 +529,10 @@ class Media(object):
            and (self.publish_on is not None and self.publish_on <= datetime.now())\
            and (self.publish_until is None or self.publish_until >= datetime.now())
 
+    @property
+    def resource(self):
+        return Resource('media', self.id, media=self)
+
     def increment_views(self):
         """Increment the number of views in the database.
 
@@ -526,25 +544,9 @@ class Media(object):
             self.views += 1
             return self.views
 
-        # Don't raise an exception should concurrency problems occur.
-        # Views will not actually be incremented in this case, but thats
-        # relatively unimportant compared to rendering the page for the user.
-        # We may be able to remove this after we improve our triggers to not
-        # issue an UPDATE on media_fulltext unless one of its columns are
-        # actually changed. Even when just media.views is updated, all the
-        # columns in the corresponding media_fulltext row are updated, and
-        # media_fulltext's MyISAM engine must lock the whole table to do so.
-        transaction = DBSession.begin_nested()
-        try:
-            DBSession.query(self.__class__)\
-                .filter(self.__class__.id == self.id)\
-                .update({self.__class__.views: self.__class__.views + 1})
-            transaction.commit()
-        except OperationalError, e:
-            transaction.rollback()
-            # (OperationalError) (1205, 'Lock wait timeout exceeded, try restarting the transaction')
-            if not '1205' in e.message:
-                raise
+        DBSession.execute(media.update()\
+            .values(views=media.c.views + 1)\
+            .where(media.c.id == self.id))
 
         # Increment the views by one for the rest of the request,
         # but don't allow the ORM to increment the views too.

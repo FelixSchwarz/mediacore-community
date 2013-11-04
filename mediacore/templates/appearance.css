@@ -1,3 +1,12 @@
+/**
+ * This file is a part of MediaDrop (http://www.mediadrop.net),
+ * Copyright 2009-2013 MediaDrop contributors
+ * For the exact contribution history, see the git revision log.
+ * The source code contained in this file is licensed under the GPLv3 or
+ * (at your option) any later version.
+ * See LICENSE.txt in the main project directory, for more information.
+ **/
+
 .mcore-text {
 	color: ${appearance_text_color};
 }
@@ -27,15 +36,22 @@ a.mcore-heading:visited {
 }
 {% end %}
 
+{% if appearance_display_logo and appearance_logo %}\
+.mcore-login-box {
+    margin-top: -5px;
+}
+{% end %}
+
 /* Sectional Nav */
 a.mcore-nav-link:link,
-a.mcore-nav-link:visited {
+a.mcore-nav-link:visited,
+.mcore-nav-link .mcore-navbar-text {
 	color: ${uikit_colors['btn_text_color']};
 	text-shadow: 0 -1px ${uikit_colors['btn_text_shadow_color']};
 }
-a.mcore-nav-link:hover,
-a.mcore-nav-link:active,
-a.mcore-nav-link.active {
+.mcore-nav-link:hover,
+.mcore-nav-link:active,
+.mcore-nav-link.active {
 	color: ${uikit_colors['btn_text_hover_color']};
 }
 .mcore-nav-box {

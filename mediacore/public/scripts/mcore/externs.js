@@ -1,19 +1,10 @@
 /**
- * This file is a part of MediaCore, Copyright 2010 Simple Station Inc.
- *
- * MediaCore is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * MediaCore is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+ * This file is a part of MediaDrop (http://www.mediadrop.net),
+ * Copyright 2009-2013 MediaDrop contributors
+ * For the exact contribution history, see the git revision log.
+ * The source code contained in this file is licensed under an MIT style license.
+ * See LICENSE.txt in the main project directory, for more information.
+ **/
 
 /**
  * @fileoverview This file defines the signatures of functions and prototypes
@@ -29,7 +20,7 @@
 
 /**
  * The main jwplayer library access point.
- * From scripts/third-party/jw_player/jwplayer.js
+ * From scripts/third-party/jw_player/jwplayer.min.js
  * @param {Element|string|number=} opt_playerElement The DOM element, ID,
  *     or player index to construct or retrieve the player API for.
  * @return {jwplayer.api.PlayerAPI}

@@ -1,26 +1,17 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
-from datetime import datetime
-from sqlalchemy import Table, ForeignKey, Column, sql
-from sqlalchemy.types import Unicode, UnicodeText, Integer, DateTime, Boolean, Float
-from sqlalchemy.orm import mapper, relation, backref, synonym, interfaces, validates, Query
+from sqlalchemy import Table, ForeignKey, Column
+from sqlalchemy.types import Unicode, Integer
+from sqlalchemy.orm import mapper, relation, backref, validates, Query
 from sqlalchemy.orm.attributes import set_committed_value
 
 from mediacore.lib.compat import defaultdict
-from mediacore.model import SLUG_LENGTH, slugify
+from mediacore.model import get_available_slug, SLUG_LENGTH, slugify
 from mediacore.model.meta import DBSession, metadata
 from mediacore.plugin import events
 
@@ -98,7 +89,7 @@ class CategoryQuery(Query):
     """Iterate over all categories and nested children in depth-first order."""
 
     def all(self):
-       return CategoryList(self)
+        return CategoryList(self)
 
     def roots(self):
         """Filter for just root, parentless categories."""
@@ -133,6 +124,24 @@ class Category(object):
 
     def __unicode__(self):
         return self.name
+
+    @classmethod
+    def example(cls, **kwargs):
+        category = Category()
+        defaults = dict(
+            name=u'Foo',
+            parent_id=0
+        )
+        defaults.update(kwargs)
+        defaults.setdefault('slug', get_available_slug(Category, defaults['name']))
+
+        for key, value in defaults.items():
+            assert hasattr(category, key)
+            setattr(category, key, value)
+
+        DBSession.add(category)
+        DBSession.flush()
+        return category
 
     @validates('slug')
     def validate_slug(self, key, slug):
@@ -178,10 +187,13 @@ class Category(object):
         return len(self.ancestors())
 
 
-mapper(Category, categories, order_by=categories.c.name, extension=events.MapperObserver(events.Category), properties={
-    'children': relation(Category,
-        backref=backref('parent', remote_side=[categories.c.id]),
-        order_by=categories.c.name.asc(),
-        collection_class=CategoryList,
-        join_depth=2),
-})
+mapper(Category, categories,
+    order_by=categories.c.name,
+    extension=events.MapperObserver(events.Category),
+    properties={
+        'children': relation(Category,
+            backref=backref('parent', remote_side=[categories.c.id]),
+            order_by=categories.c.name.asc(),
+            collection_class=CategoryList,
+            join_depth=2),
+    })

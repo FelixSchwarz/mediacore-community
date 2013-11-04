@@ -1,27 +1,12 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from pylons import request
-from tw.forms import PasswordField, SingleSelectField
-from tw.forms.fields import ContainerMixin as _ContainerMixin
-from tw.forms.validators import All, FancyValidator, FieldsMatch, Invalid, NotEmpty, PlainText, Schema
+# See LICENSE.txt in the main project directory, for more information.
 
 from mediacore.forms import ListFieldSet, ListForm, SubmitButton, TextField
 from mediacore.lib.i18n import N_
-from mediacore.plugin import events
-from mediacore.plugin.abc import abstractmethod
 
 class StorageForm(ListForm):
     template = 'admin/box-form.html'

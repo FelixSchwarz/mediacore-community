@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 import logging
 import re
@@ -22,7 +14,7 @@ from urllib2 import Request, urlopen, URLError
 from mediacore import USER_AGENT
 from mediacore.lib.filetypes import VIDEO
 from mediacore.lib.i18n import N_
-from mediacore.lib.storage import EmbedStorageEngine
+from mediacore.lib.storage.api import EmbedStorageEngine
 from mediacore.lib.uri import StorageURI
 
 log = logging.getLogger(__name__)

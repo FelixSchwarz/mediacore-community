@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 """Helper functions
 
 Consists of functions to typically be used within templates, but also
@@ -20,6 +12,7 @@ available to Controllers. This module is available to templates as 'h'.
 import re
 import simplejson
 import time
+import warnings
 
 from datetime import datetime
 from urllib import quote, unquote, urlencode
@@ -28,20 +21,24 @@ from urlparse import urlparse
 from sqlalchemy import orm
 
 from genshi.core import Stream
+from paste.util import mimeparse
 from pylons import app_globals, config, request, response, translator
 from webhelpers import date, feedgenerator, html, number, misc, text, paginate, containers
 from webhelpers.html import tags
 from webhelpers.html.builder import literal
 from webhelpers.html.converters import format_paragraphs
 
+from mediacore.lib.auth import viewable_media
 from mediacore.lib.compat import any, md5
-from mediacore.lib.i18n import N_, _, format_date, format_datetime, format_time
+from mediacore.lib.i18n import (N_, _, format_date, format_datetime, 
+    format_decimal, format_time)
 from mediacore.lib.players import (embed_player, embed_iframe, media_player,
     pick_any_media_file, pick_podcast_media_file)
 from mediacore.lib.thumbnails import thumb, thumb_url
 from mediacore.lib.uri import (best_link_uri, download_uri, file_path,
     pick_uri, pick_uris, web_uri)
-from mediacore.lib.util import delete_files, merge_dicts, redirect, url, url_for
+from mediacore.lib.util import (current_url, delete_files, merge_dicts, 
+    redirect, url, url_for, url_for_media)
 from mediacore.lib.xhtml import (clean_xhtml, decode_entities, encode_entities,
     excerpt_xhtml, line_break_xhtml, list_acceptable_xhtml, strip_xhtml,
     truncate_xhtml)
@@ -52,8 +49,10 @@ __all__ = [
     # Imports that should be exported:
     'any',
     'clean_xhtml',
+    'current_url',
     'config', # is this appropriate to export here?
     'containers',
+    'content_type_for_response',
     'date',
     'decode_entities',
     'encode_entities',
@@ -61,6 +60,7 @@ __all__ = [
     'feedgenerator',
     'format_date',
     'format_datetime',
+    'format_decimal',
     'format_paragraphs',
     'format_time',
     'html',
@@ -84,8 +84,10 @@ __all__ = [
     'unquote',
     'url',
     'url_for',
+    'url_for_media',
     'urlencode',
     'urlparse',
+    'viewable_media',
 
     # Locally defined functions that should be exported:
     'append_class_attr',
@@ -102,6 +104,7 @@ __all__ = [
     'gravatar_from_email',
     'is_admin',
     'js',
+    'mediadrop_version',
     'pick_any_media_file',
     'pick_podcast_media_file',
     'pretty_file_size',
@@ -114,17 +117,21 @@ __all__.sort()
 
 js_sources = {
     'mootools_more': '/scripts/third-party/mootools-1.2.4.4-more-yui-compressed.js',
-    'mootools_core': 'http://ajax.googleapis.com/ajax/libs/mootools/1.2.5/mootools-yui-compressed.js',
+    'mootools_core': '/scripts/third-party/mootools-1.2.6-core-2013-01-16.min.js',
 }
 js_sources_debug = {
     'mootools_more': '/scripts/third-party/mootools-1.2.4.4-more.js',
-    'mootools_core': '/scripts/third-party/mootools-1.2.5-core.js',
+    'mootools_core': '/scripts/third-party/mootools-1.2.6-core-2013-01-16.js',
 }
 
 def js(source):
     if config['debug'] and source in js_sources_debug:
         return url_for(js_sources_debug[source])
     return url_for(js_sources[source])
+
+def mediadrop_version():
+    import mediacore
+    return mediacore.__version__
 
 def duration_from_seconds(total_sec, shortest=True):
     """Return the HH:MM:SS duration for a given number of seconds.
@@ -168,6 +175,20 @@ def duration_to_seconds(duration):
     except ValueError:
         total = time.strptime(duration, '%M:%S')
     return total.tm_hour * 60 * 60 + total.tm_min * 60 + total.tm_sec
+
+def content_type_for_response(available_formats):
+    content_type = mimeparse.best_match(
+        available_formats,
+        request.environ.get('HTTP_ACCEPT', '*/*')
+    )
+    # force a content-type: if the user agent did not specify any acceptable
+    # content types (e.g. just 'text/html' like some bots) we still need to
+    # set a content type, otherwise the WebOb will generate an exception
+    # AttributeError: You cannot access Response.unicode_body unless charset
+    # the only alternative to forcing a "bad" content type would be not to 
+    # deliver any content at all - however most bots are just faulty and they
+    # requested something like 'sitemap.xml'.
+    return content_type or available_formats[0]
 
 def truncate(string, size, whole_word=True):
     """Truncate a plaintext string to roughly a given size (full words).
@@ -304,37 +325,37 @@ def has_permission(permission_name):
     """Return True if the logged in user has the given permission.
 
     This always returns false if the given user is not logged in."""
-    user = request.environ.get('repoze.who.identity', {}).get('user', None)
-    if user:
-        return user.has_permission(permission_name)
-    return False
+    return request.perm.contains_permission(permission_name)
 
 def is_admin():
-    """Return True if the logged in user is a part of the Admins group.
+    """Return True if the logged in user has the "admin" permission.
 
-    TODO: This method will need to be replaced when we improve our user
-    access controls.
+    For a default install a user has the "admin" permission if he is a member
+    of the "admins" group.
 
-    :returns: Whether or not the current user is an Admin.
+    :returns: Whether or not the current user has "admin" permission.
     :rtype: bool
     """
-    return has_permission('admin')
+    return has_permission(u'admin')
 
 def can_edit(item=None):
-    """Return True if the logged in user has the 'edit' permission.
+    """Return True if the logged in user has the "edit" permission.
 
-    :param item: When we improve our user access controls, this will be used
-                 to check edit permissions on a particular object.
-                 TODO: 'item' is currently an unimplemented argument.
+    For a default install this is true for all members of the "admins" group.
+
+    :param item: unused parameter (deprecated)
     :type item: unimplemented
 
-    :returns: Whether the current user has the 'edit' permission.
+    :returns: Whether or not the current user has "edit" permission.
     :rtype: bool
     """
-    return has_permission('edit')
+    if item is not None:
+        warnings.warn(u'"item" parameter for can_edit() is deprecated', 
+          DeprecationWarning, stacklevel=2)
+    return has_permission(u'edit')
 
 def gravatar_from_email(email, size):
-    """Return the URL for a gravatar image matching the povided email address.
+    """Return the URL for a gravatar image matching the provided email address.
 
     :param email: the email address
     :type email: string or unicode or None
@@ -388,7 +409,7 @@ def doc_link(page=None, anchor='', text=N_('Help'), **kwargs):
     XXX: Target attribute is not XHTML compliant.
     """
     attrs = {
-        'href': 'http://getmediacore.com/docs/user/%s.html#%s' % (page, anchor),
+        'href': 'http://mediadrop.net/docs/user/%s.html#%s' % (page, anchor),
         'target': '_blank',
     }
     if kwargs:
@@ -402,6 +423,8 @@ def default_page_title(default=None, **kwargs):
     settings = request.settings
     title_order = settings.get('general_site_title_display_order', None)
     site_name = settings.get('general_site_name', default)
+    if not default:
+        return site_name
     if not title_order:
         return '%s | %s' % (default, site_name)
     elif title_order.lower() == 'append':

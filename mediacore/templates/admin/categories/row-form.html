@@ -1,17 +1,10 @@
-<!--! This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-
-	MediaCore is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	MediaCore is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+<!--!
+This file is a part of MediaDrop (http://www.mediadrop.net),
+Copyright 2009-2013 MediaDrop contributors
+For the exact contribution history, see the git revision log.
+The source code contained in this file is licensed under the GPLv3 or
+(at your option) any later version.
+See LICENSE.txt in the main project directory, for more information.
 -->
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:py="http://genshi.edgewall.org/"
@@ -33,8 +26,9 @@
 		</td>
 		<td headers="h-btns">
 			<form action="${h.url_for(action='save', id=category.id or 'new')}" method="post" class="edit-modal">
-				<input py:for="name in ('name', 'slug', 'parent_id')"
-					   py:with="field = children[name]"
+				<input py:for="field in children"
+					   py:with="name = field.id"
+					   py:if="getattr(field, 'type', None) not in ('button', 'submit', 'reset', 'image')"
 					   py:replace="field.display(getattr(category, name, None), **args_for(field))" />
 				<a href="${h.url_for(action='edit', id=category.id)}" class="btn table-row middle btn-inline-edit"><span>Edit</span></a><input py:with="field = children['delete']" py:replace="field.display(value_for(field), **args_for(field))" />
 			</form>

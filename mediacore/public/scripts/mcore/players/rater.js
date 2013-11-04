@@ -1,19 +1,10 @@
 /**
- * This file is a part of MediaCore, Copyright 2010 Simple Station Inc.
- *
- * MediaCore is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * MediaCore is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+ * This file is a part of MediaDrop (http://www.mediadrop.net),
+ * Copyright 2009-2013 MediaDrop contributors
+ * For the exact contribution history, see the git revision log.
+ * The source code contained in this file is licensed under an MIT style license.
+ * See LICENSE.txt in the main project directory, for more information.
+ **/
 
 goog.provide('mcore.players.Rater');
 
@@ -57,8 +48,8 @@ mcore.players.Rater.prototype.xhr_;
  * Handle the user clicking the like-this button.
  * @param {string} url Submit URL for logging the rating.
  */
-mcore.players.Rater.prototype.like = function(url) {
-  this.submitRating(url);
+mcore.players.Rater.prototype.like = function(url, parameters) {
+  this.submitRating(url, parameters);
   this.incrementDisplayCounter('mcore-likes-counter');
 };
 
@@ -67,8 +58,8 @@ mcore.players.Rater.prototype.like = function(url) {
  * Handle the user clicking the dislike-this button.
  * @param {string} url Submit URL for logging the rating.
  */
-mcore.players.Rater.prototype.dislike = function(url) {
-  this.submitRating(url);
+mcore.players.Rater.prototype.dislike = function(url, parameters) {
+  this.submitRating(url, parameters);
   this.incrementDisplayCounter('mcore-dislikes-counter');
 };
 
@@ -78,13 +69,13 @@ mcore.players.Rater.prototype.dislike = function(url) {
  * @param {string} url Submit URL.
  * @protected
  */
-mcore.players.Rater.prototype.submitRating = function(url) {
+mcore.players.Rater.prototype.submitRating = function(url, parameters) {
   this.xhr_ = new goog.net.XhrIo();
   goog.events.listenOnce(this.xhr_,
       goog.net.EventType.COMPLETE,
       this.handleRatingComplete, false, this);
-  this.xhr_.send(url, undefined, undefined,
-      {'X-Requested-With': 'XMLHttpRequest'});
+  var data = goog.Uri.QueryData.createFromMap(new goog.structs.Map(parameters));
+  this.xhr_.send(url, 'POST', data.toString(), {'X-Requested-With': 'XMLHttpRequest'});
 };
 
 

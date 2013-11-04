@@ -1,28 +1,18 @@
-# This file is a part of MediaCore, Copyright 2010 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 import logging
 
-from pylons import request, response, session, tmpl_context
-from repoze.what.predicates import has_permission
-from sqlalchemy import orm, sql
+from pylons import tmpl_context
+from sqlalchemy import orm
 
-from mediacore.lib import helpers
+from mediacore.lib.auth import has_permission
 from mediacore.lib.base import BaseController
-from mediacore.lib.decorators import (autocommit, expose, observable,
-    paginate, validate)
+from mediacore.lib.decorators import autocommit, expose, observable, validate
 from mediacore.lib.helpers import redirect, url_for
 from mediacore.lib.storage import sort_engines, StorageEngine
 from mediacore.model import DBSession, fetch_row
@@ -35,6 +25,7 @@ class StorageController(BaseController):
     allow_only = has_permission('admin')
 
     @expose('admin/storage/index.html')
+    @observable(events.Admin.StorageController.index)
     def index(self, page=1, **kwargs):
         """List storage engines with pagination.
 
@@ -63,6 +54,7 @@ class StorageController(BaseController):
         }
 
     @expose('admin/storage/edit.html')
+    @observable(events.Admin.StorageController.edit)
     def edit(self, id, engine_type=None, **kwargs):
         """Display the :class:`~mediacore.lib.storage.StorageEngine` for editing or adding.
 
@@ -116,6 +108,7 @@ class StorageController(BaseController):
 
     @expose('json', request_method='POST')
     @autocommit
+    @observable(events.Admin.StorageController.delete)
     def delete(self, id, **kwargs):
         """Delete a StorageEngine.
 
@@ -132,6 +125,7 @@ class StorageController(BaseController):
 
     @expose(request_method='POST')
     @autocommit
+    @observable(events.Admin.StorageController.enable)
     def enable(self, id, **kwargs):
         """Enable a StorageEngine.
 
@@ -145,6 +139,7 @@ class StorageController(BaseController):
 
     @expose(request_method='POST')
     @autocommit
+    @observable(events.Admin.StorageController.disable)
     def disable(self, id, **kwargs):
         """Disable a StorageEngine.
 

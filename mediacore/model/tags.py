@@ -1,35 +1,25 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+# See LICENSE.txt in the main project directory, for more information.
 """
 Tag-based Categorization
 
 Content can be labelled in an ad-hoc fashion with tags. Typically tags will
 be displayed on the frontend using a 'tag cloud', rather than listing all
 tags. This means you can tag all you want!
-
 """
+
 import re
 
-from datetime import datetime
 from itertools import izip
-from sqlalchemy import Table, ForeignKey, Column, sql, func
-from sqlalchemy.types import Unicode, UnicodeText, Integer, DateTime, Boolean, Float
-from sqlalchemy.orm import mapper, relation, backref, synonym, interfaces, validates, column_property
+from sqlalchemy import Table, Column, sql, func
+from sqlalchemy.types import Unicode, Integer
+from sqlalchemy.orm import mapper, validates
 
-from mediacore.model import SLUG_LENGTH, slugify, _mtm_count_property
+from mediacore.model import SLUG_LENGTH, slugify
 from mediacore.model.meta import DBSession, metadata
 from mediacore.plugin import events
 
@@ -130,7 +120,6 @@ def fetch_and_create_tags(tag_names):
     :rtype: :class:`TagList` instance
 
     """
-    results = TagList()
     lower_names = [name.lower() for name in tag_names]
     slugs = [slugify(name) for name in lower_names]
 

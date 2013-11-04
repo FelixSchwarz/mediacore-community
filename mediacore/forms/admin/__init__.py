@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 from tw.forms.validators import FieldStorageUploadConverter
 
@@ -28,16 +20,17 @@ class SearchForm(ListForm):
         SubmitButton('go', default='Go', css_classes=['clickable nav-search-btn']),
     ]
     submit_text = None
-
-    def post_init(self, *args, **kwargs):
-        events.Admin.SearchForm(self)
+    
+    event = events.Admin.SearchForm
 
 class ThumbForm(ListForm):
     template = 'admin/thumb-form.html'
     id = 'thumb-form'
     css_class = 'form'
     submit_text = None
-
+    
+    event = events.Admin.ThumbForm
+    
     fields = [
         FileField(
             'thumb',
@@ -51,6 +44,3 @@ class ThumbForm(ListForm):
 # TODO: Put this submit button back in, and update the javascript to remove it.
 #        SubmitButton('save', default='Save', css_classes=['btn', 'btn-save', 'f-rgt']),
     ]
-
-    def post_init(self, *args, **kwargs):
-        events.Admin.ThumbForm(self)

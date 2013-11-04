@@ -1,25 +1,17 @@
 /**
- * This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
- *
- * MediaCore is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * This file is a part of MediaDrop (http://www.mediadrop.net),
+ * Copyright 2009-2013 MediaDrop contributors
+ * For the exact contribution history, see the git revision log.
+ * The source code contained in this file is licensed under the GPLv3 or
  * (at your option) any later version.
- *
- * MediaCore is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+ * See LICENSE.txt in the main project directory, for more information.
+ **/
 
 /* Statuses */
-#status-list {
+.status-list {
 	margin: 3px 5px;
 }
-#status-list li {
+.status-list li {
 	padding-left: 20px;
 	margin: 3px 0;
 	font-size: 108%;
@@ -45,12 +37,23 @@
 	color: #417F00;
 	border: 0;
 }
-#status-publish .publish-date {
+#status-publish .publish-date,
+#status-expiry .expiry-date {
 	color: #3372A0;
 	text-transform: none;
 }
-#status-publish:hover .publish-date {
+#status-publish:hover .publish-date,
+#status-expiry:hover .expiry-date {
 	text-decoration: underline;
+}
+.status-list.media-expiry {
+    border-top: 1px solid #B3C4D0;
+    margin: 10px 5px 3px;
+}
+/* need two selectors to overwrite ".status-list li" above */
+.status-list .status-list-expiry {
+	background: url('../images/icons/expiry.png') no-repeat;
+	margin-top: 10px;
 }
 
 .status-unreviewed,
@@ -185,7 +188,7 @@
 	font-size: 14px;
 }
 #fmgr #file-label {
-	width: 590px;
+	width: 540px;
 }
 #fmgr #url {
 	color: #3c4d5a;
@@ -216,7 +219,7 @@
 }
 #fmgr #file-label {
 	padding: 6px 6px 5px 0;
-	text-align: center;
+
 }
 #fmgr .btn-upload-file {
 	float: right;

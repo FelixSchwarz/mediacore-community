@@ -1,20 +1,11 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 from formencode.validators import URL
-from genshi.core import Markup
 from tw.forms import SingleSelectField
 from tw.forms.validators import NotEmpty
 
@@ -27,7 +18,9 @@ class PodcastForm(ListForm):
     id = 'podcast-form'
     css_class = 'form'
     submit_text = None
-
+    
+    event = events.Admin.PodcastForm
+    
     # required to support multiple named buttons to differentiate between Save & Delete?
     _name = 'vf'
 
@@ -126,6 +119,3 @@ class PodcastForm(ListForm):
         SubmitButton('save', default=N_('Save'), named_button=True, css_classes=['btn', 'blue', 'f-rgt']),
         SubmitButton('delete', default=N_('Delete'), named_button=True, css_classes=['btn']),
     ]
-
-    def post_init(self, *args, **kwargs):
-        events.Admin.PodcastForm(self)

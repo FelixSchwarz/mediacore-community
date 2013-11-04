@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 from tw.api import WidgetsList
 from tw.forms.validators import FieldStorageUploadConverter
@@ -44,15 +36,14 @@ class UploadForm(ListForm):
     css_class = 'form'
     show_children_errors = False
     params = ['async_action']
-
+    
+    events = events.UploadForm
+    
     class fields(WidgetsList):
         name = TextField(validator=validators['name'], label_text=N_('Your Name:'), maxlength=50)
         email = TextField(validator=email_validator(not_empty=True), label_text=N_('Your Email:'), help_text=N_('(will never be published)'), maxlength=255)
         title = TextField(validator=validators['title'], label_text=N_('Title:'), maxlength=255)
         description = XHTMLTextArea(validator=validators['description'], label_text=N_('Description:'), attrs=dict(rows=5, cols=25))
-        url = TextField(validator=validators['url'], label_text=N_('Add a YouTube, Vimeo or Google Video URL:'), maxlength=255)
+        url = TextField(validator=validators['url'], label_text=N_('Add a YouTube, Vimeo or Amazon S3 link:'), maxlength=255)
         file = FileField(validator=FieldStorageUploadConverter(if_missing=None, messages={'empty':N_('Oops! You forgot to enter a file.')}), label_text=N_('OR:'))
         submit = SubmitButton(default=N_('Submit'), css_classes=['mcore-btn', 'btn-submit'])
-
-    def post_init(self, *args, **kwargs):
-        events.UploadForm(self)

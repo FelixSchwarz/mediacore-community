@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 """
 The Base Controller API
 
@@ -25,13 +17,14 @@ from paste.deploy.converters import asbool
 from pylons import app_globals, config, request, response, tmpl_context
 from pylons.controllers import WSGIController
 from pylons.controllers.util import abort
-from repoze.what.plugins.pylonshq import ControllerProtector
-from repoze.what.predicates import has_permission, Predicate
 from tw.forms.fields import ContainerMixin as _ContainerMixin
 
 from mediacore.lib import helpers
+from mediacore.lib.auth import ControllerProtector, has_permission, Predicate
+from mediacore.lib.css_delivery import StyleSheets
 from mediacore.lib.i18n import Translator
-from mediacore.model.meta import DBSession
+from mediacore.lib.js_delivery import Scripts
+from mediacore.model import DBSession, Setting
 
 __all__ = [
     'BareBonesController',
@@ -63,7 +56,7 @@ class BareBonesController(WSGIController):
         override this method to customize the arguments your controller
         actions are called with.
 
-        For MediaCore, we extend this to include all GET and POST params.
+        For MediaDrop, we extend this to include all GET and POST params.
 
         NOTE: If the action does not define \*\*kwargs, then only the kwargs
               that it defines will be passed to it when it is called.
@@ -83,6 +76,12 @@ class BareBonesController(WSGIController):
               the class will be protected it. See :meth:`__init__`.
         """
         self.setup_translator()
+        response.scripts = Scripts()
+        response.stylesheets = StyleSheets()
+        response.feed_links = []
+        response.facebook = None
+        response.warnings = []
+        request.perm = request.environ['mediadrop.perm']
 
         action_method = getattr(self, kwargs['action'], None)
         # The expose decorator sets the exposed attribute on controller
@@ -133,7 +132,7 @@ class BaseController(BareBonesController):
         tmpl_context.external_template = None
 
         # FIXME: This external template is only ever updated on server startup
-        if asbool(config['external_template']):
+        if asbool(config.get('external_template')):
             tmpl_name = config['external_template_name']
             tmpl_url = config['external_template_url']
             timeout = config['external_template_timeout']
@@ -235,7 +234,10 @@ class BaseSettingsController(BaseController):
     def _update_settings(self, values):
         """Modify the settings associated with the given dictionary."""
         for name, value in values.iteritems():
-            setting = tmpl_context.settings[name]
+            if name in tmpl_context.settings:
+                setting = tmpl_context.settings[name]
+            else:
+                setting = Setting(key=name, value=value)
             if value is None:
                 value = u''
             else:
@@ -283,11 +285,13 @@ class BaseSettingsController(BaseController):
 
     def _save(self, form, redirect_action=None, values=None):
         """Save the values from the passed in form instance."""
-        values = self._flatten_settings_from_form(tmpl_context.settings,
-                                                  form, values)
+        values = self._flatten_settings_from_form(form, values)
         self._update_settings(values)
         if redirect_action:
             helpers.redirect(action=redirect_action)
+
+    def _is_button(self, field):
+        return getattr(field, 'type', None) in ('button', 'submit', 'reset', 'image')
 
     def _nest_settings_for_form(self, settings, form):
         """Create a dict of setting values nested to match the form."""
@@ -301,14 +305,14 @@ class BaseSettingsController(BaseController):
                 form_values[field._name] = settings[field._name].value
         return form_values
 
-    def _flatten_settings_from_form(self, settings, form, form_values):
+    def _flatten_settings_from_form(self, form, form_values):
         """Take a nested dict and return a flat dict of setting values."""
         setting_values = {}
         for field in form.c:
             if isinstance(field, _ContainerMixin):
                 setting_values.update(self._flatten_settings_from_form(
-                    settings, field, form_values[field._name]
+                    field, form_values[field._name]
                 ))
-            elif field._name in settings:
+            elif not self._is_button(field):
                 setting_values[field._name] = form_values[field._name]
         return setting_values

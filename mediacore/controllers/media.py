@@ -1,17 +1,9 @@
-# This file is a part of MediaCore, Copyright 2009 Simple Station Inc.
-#
-# MediaCore is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
+# For the exact contribution history, see the git revision log.
+# The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
-#
-# MediaCore is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# See LICENSE.txt in the main project directory, for more information.
 
 """
 Publicly Facing Media Controllers
@@ -19,16 +11,14 @@ Publicly Facing Media Controllers
 import logging
 import os.path
 
-from itertools import izip
-
 from akismet import Akismet
 from paste.fileapp import FileApp
 from paste.util import mimeparse
-from pylons import app_globals, config, request, response
-from pylons import url
-from pylons.controllers.util import forward, redirect_to
+from pylons import config, request, response
+from pylons.controllers.util import abort, forward, redirect_to
 
 from sqlalchemy import orm, sql
+from sqlalchemy.exc import OperationalError
 
 from webob.exc import (
     HTTPNotAcceptable,
@@ -40,14 +30,12 @@ from mediacore import USER_AGENT
 from mediacore.forms.comments import PostCommentSchema
 from mediacore.lib import helpers
 from mediacore.lib.base import BaseController
-from mediacore.lib.decorators import expose, expose_xhr, observable, paginate, validate, validate_xhr, autocommit
+from mediacore.lib.decorators import expose, expose_xhr, observable, paginate, validate_xhr, autocommit
 from mediacore.lib.email import send_comment_notification
-from mediacore.lib.helpers import (
-    file_path, filter_vulgarity, redirect,
-    store_transient_message, url_for,
-    has_permission,
-)
+from mediacore.lib.helpers import (filter_vulgarity, redirect, url_for, 
+    viewable_media)
 from mediacore.lib.i18n import _
+from mediacore.lib.services import Facebook
 from mediacore.lib.templating import render
 from mediacore.model import (DBSession, fetch_row, get_available_slug,
     Media, MediaFile, Comment, Tag, Category, Author, AuthorWithIP,
@@ -108,6 +96,17 @@ class MediaController(BaseController):
             tag = fetch_row(Tag, slug=tag)
             media = media.filter(Media.tags.contains(tag))
 
+        if (request.settings['rss_display'] == 'True') and (not (q or tag)):
+            if show == 'latest':
+                response.feed_links.extend([
+                    (url_for(controller='/sitemaps', action='latest'), _(u'Latest RSS')),
+                ])
+            elif show == 'featured':
+                response.feed_links.extend([
+                    (url_for(controller='/sitemaps', action='featured'), _(u'Featured RSS')),
+                ])
+
+        media = viewable_media(media)
         return dict(
             media = media,
             result_count = media.count(),
@@ -128,7 +127,7 @@ class MediaController(BaseController):
 
     @expose('media/explore.html')
     @observable(events.MediaController.explore)
-    def explore(self, page=1, **kwargs):
+    def explore(self, **kwargs):
         """Display the most recent 15 media.
 
         :rtype: Dict
@@ -143,21 +142,31 @@ class MediaController(BaseController):
 
         latest = media.order_by(Media.publish_on.desc())
         popular = media.order_by(Media.popularity_points.desc())
-        featured = None
 
+        featured = None
         # get featured videos. if none, first one from popular is used
         # featured_cat = helpers.get_featured_category()
         # if featured_cat:
-        #     featured = latest.in_category(featured_cat).first()
+        #     featured = viewable_media(latest.in_category(featured_cat)).first()
         # if not featured:
-        #     featured = popular.first()
+        #     featured = viewable_media(popular).first()
 
-        latest = latest.exclude(featured)[:8]
+        latest = viewable_media(latest.exclude(featured))[:8]
         most_popular_highlight = None
         if popular:
             # we get highlight as the a random choose among the top 10 popular media
             most_popular_highlight = popular.limit(10).from_self().order_by(sql.func.random()).first()
-        popular = popular.exclude(most_popular_highlight)[:5]
+        popular = viewable_media(popular.exclude(most_popular_highlight, latest))[:5]
+
+        if request.settings['sitemaps_display'] == 'True':
+            response.feed_links.extend([
+                (url_for(controller='/sitemaps', action='google'), _(u'Sitemap XML')),
+                (url_for(controller='/sitemaps', action='mrss'), _(u'Sitemap RSS')),
+            ])
+        if request.settings['rss_display'] == 'True':
+            response.feed_links.extend([
+                (url_for(controller='/sitemaps', action='latest'), _(u'Latest RSS')),
+            ])
 
         return dict(
             featured = featured,
@@ -172,9 +181,9 @@ class MediaController(BaseController):
         """Redirect to a randomly selected media item."""
         # TODO: Implement something more efficient than ORDER BY RAND().
         #       This method does a full table scan every time.
-        media = Media.query.published()\
-            .order_by(sql.func.random())\
-            .first()
+        random_query = Media.query.published().order_by(sql.func.random())
+        media = viewable_media(random_query).first()
+
         if media is None:
             redirect(action='explore')
         if media.podcast_id:
@@ -187,7 +196,6 @@ class MediaController(BaseController):
         return has_permission('comment')
 
     @expose('media/view.html')
-    @autocommit
     @observable(events.MediaController.view)
     def view(self, slug, podcast_slug=None, **kwargs):
         """Display the media player, info and comments.
@@ -219,19 +227,28 @@ class MediaController(BaseController):
 
         """
         media = fetch_row(Media, slug=slug)
+        request.perm.assert_permission(u'view', media.resource)
 
         if media.podcast_id is not None:
             # Always view podcast media from a URL that shows the context of the podcast
             if url_for() != url_for(podcast_slug=media.podcast.slug):
                 redirect(podcast_slug=media.podcast.slug)
 
-        media.increment_views()
+        try:
+            media.increment_views()
+            DBSession.commit()
+        except OperationalError:
+            DBSession.rollback()
 
+        if request.settings['comments_engine'] == 'facebook':
+            response.facebook = Facebook(request.settings['facebook_appid'])
+
+        related_media = viewable_media(Media.query.related(media))[:6]
         # TODO: finish implementation of different 'likes' buttons
         #       e.g. the default one, plus a setting to use facebook.
         return dict(
             media = media,
-            related_media = Media.query.related(media)[:6],
+            related_media = related_media,
             comments = media.comments.published().all(),
             comment_form_action = url_for(action='comment'),
             comment_form_values = kwargs,
@@ -241,13 +258,15 @@ class MediaController(BaseController):
     @expose('players/iframe.html')
     @observable(events.MediaController.embed_player)
     def embed_player(self, slug, w=None, h=None, **kwargs):
+        media = fetch_row(Media, slug=slug)
+        request.perm.assert_permission(u'view', media.resource)
         return dict(
-            media = fetch_row(Media, slug=slug),
+            media = media,
             width = w and int(w) or None,
             height = h and int(h) or None,
         )
 
-    @expose()
+    @expose(request_method="POST")
     @autocommit
     @observable(events.MediaController.rate)
     def rate(self, slug, up=None, down=None, **kwargs):
@@ -266,7 +285,8 @@ class MediaController(BaseController):
             raise HTTPUnauthorized().exception
             
         media = fetch_row(Media, slug=slug)
-        
+        request.perm.assert_permission(u'view', media.resource)
+
         # check if current user has already voted this media object
         votes = Vote.query.get_votes(media_id=media.id, user_name = userid)
         if votes.count():
@@ -284,9 +304,13 @@ class MediaController(BaseController):
         DBSession.flush()
 
         if up:
+            if not request.settings['appearance_show_like']:
+                abort(status_code=403)
             vote.increment_likes()
             media.increment_likes()
         elif down:
+            if not request.settings['appearance_show_dislike']:
+                abort(status_code=403)
             vote.increment_dislikes()
             media.increment_dislikes()
         
@@ -321,6 +345,8 @@ class MediaController(BaseController):
                 return self.view(slug, name=name, email=email, body=body,
                                  **kwargs)
 
+        if request.settings['comments_engine'] != 'builtin':
+            abort(404)
         userid = check_user_authentication(request)
         if not userid:
             log.warn('Anonymous user cannot comment media')
@@ -345,6 +371,7 @@ class MediaController(BaseController):
                 return result(False, _(u'Your comment has been rejected.'))
 
         media = fetch_row(Media, slug=slug)
+        request.perm.assert_permission(u'view', media.resource)
 
         name = user.user_name
         email = user.email_address
@@ -387,6 +414,7 @@ class MediaController(BaseController):
 
         """
         file = fetch_row(MediaFile, id=id)
+        request.perm.assert_permission(u'view', file.media.resource)
 
         file_type = file.mimetype.encode('utf-8')
         file_name = file.display_name.encode('utf-8')
@@ -394,17 +422,17 @@ class MediaController(BaseController):
         file_path = helpers.file_path(file)
         if file_path is None:
             log.warn('No path exists for requested media file: %r', file)
-            raise HTTPNotFound().exception
+            raise HTTPNotFound()
         file_path = file_path.encode('utf-8')
 
         if not os.path.exists(file_path):
             log.warn('No such file or directory: %r', file_path)
-            raise HTTPNotFound().exception
+            raise HTTPNotFound()
 
         # Ensure the request accepts files with this container
         accept = request.environ.get('HTTP_ACCEPT', '*/*')
         if not mimeparse.best_match([file_type], accept):
-            raise HTTPNotAcceptable().exception # 406
+            raise HTTPNotAcceptable() # 406
 
         method = config.get('file_serve_method', None)
         headers = []
@@ -424,12 +452,17 @@ class MediaController(BaseController):
         elif method == 'nginx_redirect':
             # Requires NGINX server configuration:
             # NGINX must have a location block configured that matches
-            # the __mediacore_serve__ path below. It should also be
-            # configured as an "internal" location to prevent people from
-            # surfing directly to it.
+            # the /__mediadrop_serve__ path below (the value configured by
+            # setting  "nginx_serve_path" option in the configuration). It
+            # should also be configured as an "internal" location to prevent
+            # people from surfing directly to it.
             # For more information see: http://wiki.nginx.org/XSendfile
-            redirect_filename = '/__mediacore_serve__/%s-%s' % (id, file_name)
-            response.headers['X-Accel-Redirect'] = redirect_filename.lower()
+            serve_path = config.get('nginx_serve_path', '__mediadrop_serve__')
+            if not serve_path.startswith('/'):
+                serve_path = '/' + serve_path
+            redirect_filename = '%s/%s' % (serve_path, os.path.basename(file_path))
+            response.headers['X-Accel-Redirect'] = redirect_filename
+
 
         else:
             app = FileApp(file_path, headers, content_type=file_type)

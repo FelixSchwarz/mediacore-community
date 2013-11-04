@@ -1,8 +1,8 @@
 .. _debug_toplevel:
 
-======================
-Debugging in MediaCore
-======================
+=========================
+Debugging in MediaDrop
+=========================
 
 Interactive Web-Based Debugging
 -------------------------------
