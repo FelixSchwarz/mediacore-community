@@ -1,5 +1,5 @@
-# This file is a part of MediaCore CE (http://www.mediacorecommunity.org),
-# Copyright 2009-2013 MediaCore Inc., Felix Schwarz and other contributors.
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
 # For the exact contribution history, see the git revision log.
 # The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
@@ -136,3 +136,4 @@ class UploadForm(ListForm):
         description = TextField(validator=validators['description'], label_text=N_(request.settings.get('text_of_description_prompt') or 'Description:'), help_text=N_(request.settings.get('text_of_description_help') or ''), attrs=dict(rows=5, cols=25))
         #url = TextField(validator=validators['url'], label_text=N_('Add a YouTube, Vimeo or Google Video URL:'), maxlength=255)
         submit = SubmitButton(default=N_('Continue'), css_classes=['mcore-btn', 'btn-submit'])
+

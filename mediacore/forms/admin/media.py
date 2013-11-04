@@ -1,5 +1,5 @@
-# This file is a part of MediaCore CE (http://www.mediacorecommunity.org),
-# Copyright 2009-2013 MediaCore Inc., Felix Schwarz and other contributors.
+# This file is a part of MediaDrop (http://www.mediadrop.net),
+# Copyright 2009-2013 MediaDrop contributors
 # For the exact contribution history, see the git revision log.
 # The source code contained in this file is licensed under the GPLv3 or
 # (at your option) any later version.
@@ -9,7 +9,7 @@
 from pylons import request
 from tw.api import WidgetsList
 from formencode import Invalid
-from formencode.validators import FancyValidator, URL
+from formencode.validators import FancyValidator
 from tw.forms import HiddenField, SingleSelectField
 from tw.forms.validators import Int, DateTimeConverter, FieldStorageUploadConverter, OneOf
 
@@ -20,6 +20,7 @@ from mediacore.forms import FileField, Form, ListForm, SubmitButton, TextArea, T
 from mediacore.forms.admin.categories import CategoryCheckBoxList
 from mediacore.model import Category, DBSession, Podcast
 from mediacore.plugin import events
+from mediacore.validation import URIValidator
 
 class DurationValidator(FancyValidator):
     """
@@ -108,7 +109,7 @@ class AddFileForm(ListForm):
     fields = [
         FileField('file', label_text=N_('Please choose an MP4 (or M4a or MP3) file'), validator=FieldStorageUploadConverter(not_empty=False, label_text=N_('Upload'))),
         SubmitButton('add_url', attrs={'class':'hidden'}, default=N_('Add URL'), named_button=True, css_class='btn grey btn-add-url f-rgt'),
-        TextField('url', validator=URL, suppress_label=True, attrs=lambda: {'title': _('YouTube, Vimeo, Google Video, Amazon S3 or any other link'), 'class': 'hidden'}, maxlength=255),
+        TextField('url', validator=URIValidator, suppress_label=True, attrs=lambda: {'title': _('YouTube, Vimeo, Google Video, Amazon S3 or any other link'), 'class': 'hidden'}, maxlength=255),
     ]
 
 file_type_options = lambda: registered_media_types()
