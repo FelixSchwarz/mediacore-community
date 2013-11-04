@@ -27,7 +27,6 @@ from mediadrop.lib.uri import pick_uris
 from mediadrop.lib.util import url_for
 from mediadrop.plugin.abc import AbstractClass, abstractmethod, abstractproperty
 
-
 from mediadrop.lib.util import check_user_authentication
 
 log = logging.getLogger(__name__)
