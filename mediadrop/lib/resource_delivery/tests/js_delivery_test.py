@@ -94,8 +94,11 @@ class InlineJSTest(PythonicTestCase):
         assert_equals('var a=true, b=false, c=null;', self._js_code(script))
 
     def test_can_escape_nested_parameters_correctly(self):
-        script = InlineJS('var a = %(a)s;', params=dict(a=[True, dict(b=12, c=["foo"])]))
-        assert_equals('var a = [true, {"c": ["foo"], "b": 12}];', self._js_code(script))
+        js_data = [True, dict(b=12, c=["foo"])]
+        script = InlineJS('var a = %(a)s;', params=dict(a=js_data))
+        expected_json_data = json.dumps(js_data)
+        expected _js = 'var a = %s;' % expected_json_data
+        assert_equals(expected_js, self._js_code(script))
 
     def test_raise_exception_for_unknown_parameters(self):
         script = InlineJS('var a = %(a)s;', params=dict(a=complex(2,3)))
